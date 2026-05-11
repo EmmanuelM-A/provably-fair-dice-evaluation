@@ -37,7 +37,7 @@ class RandomnessEngine(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    def generate_number(
+    def generate_roll(
         self, server_seed: str, client_seed: str, nonce: str = ""
     ) -> RollRecord:
         """
