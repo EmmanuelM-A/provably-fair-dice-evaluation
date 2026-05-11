@@ -1,12 +1,47 @@
+"""
+Defines the RandomnessEngine interface, which is used to generate random numbers
+based on the provided inputs, aimed at simulating the roll requests from your
+implemented provably fair dice mechanism.
+"""
+
+from abc import ABC, abstractmethod
+
+from src.utils.types import ValueRecord
 
 
-class RandomnessEngine:
+class RandomnessEngine(ABC):
+    """
+    Defines all the mandatory operations required to simulate random number
+    generation.
+    """
 
-    def get_entropy(self):
-        pass
+    @abstractmethod
+    def get_entropy(self) -> bytes:
+        """
+        Returns the entropy of the random number generator.
+        """
+        raise NotImplementedError()
 
-    def get_noise(self):
-        pass
+    @abstractmethod
+    def get_noise(self) -> bytes:
+        """
+        Returns the noise of the random number generator.
+        """
+        raise NotImplementedError()
 
-    def get_drbg_instance(self):
-        pass
+    @abstractmethod
+    def get_drbg_instance(self) -> any:  # NOTE: Come back to this!
+        """
+        Returns the random number generator used to generate random numbers.
+        """
+        raise NotImplementedError()
+
+    @abstractmethod
+    def generate_roll(
+        self, server_seed: str, client_seed: str, nonce: str
+    ) -> ValueRecord:
+        """
+        Generates a random roll using the provided server seed, client seed
+        and nonce.
+        """
+        raise NotImplementedError()
