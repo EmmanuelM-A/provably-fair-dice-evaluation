@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 
 @dataclass
-class RollRecord:
+class ValueRecord:
     server_seed: str
     client_seed: str
     nonce: str
@@ -17,7 +17,7 @@ class RollRecord:
 
 @dataclass
 class VerificationResult:
-    record: RollRecord
+    record: ValueRecord
     disclosed_server_seed: str
     recomputed_outcome: int
     match: bool
