@@ -19,10 +19,10 @@ class ProvablyFairDiceHMACMechanism(RandomnessEngine, VerificationEngine):
 
     def __init__(self) -> None:
         self._MAX_UNIT32 = 2**32
-        self._N_BUCKETS = 10_000
+        self._MAX_VALUE = 10_000  # [0, MAX_VALUE) -> MAX_VALUE possible outcomes
         self._REJECTION_THRESHOLD = (
-            self._MAX_UNIT32 // self._N_BUCKETS
-        ) * self._N_BUCKETS
+            self._MAX_UNIT32 // self._MAX_VALUE
+        ) * self._MAX_VALUE
         self._BYTES_PER_CHUNK = 4
         self._CHUNKS_PER_DIGEST = 32 // self._BYTES_PER_CHUNK
         self.MECHANISM_ID = "hmac-sha256"
@@ -71,11 +71,26 @@ class ProvablyFairDiceHMACMechanism(RandomnessEngine, VerificationEngine):
         """
         return None
 
-    def generate_number(
+    def generate_roll(
         self, server_seed: str, client_seed: str, nonce: str = ""
     ) -> RollRecord:
+        """
+        Generates a single provably fair dice outcome.
 
-        message = f"{client_seed}{nonce}".encode()
+        Process:
+        1.Compute HMAC-SHA256(key=server_seed, msg=f"{client_seed}:{nonce}")
+           to produce 32 bytes of pseudorandom data. HMAC is used instead of
+           plain SHA-256 to prevent length-extension attacks (NIST FIPS 198-1).
+        2. Iterate over the digest in 4-byte chunks, applying rejection sampling
+           to eliminate modulo bias.
+        3. Map the accepted chunk to an outcome in [0, 99.99] using:
+               outcome = floor(chunk / (_REJECTION_THRESHOLD / _N_BUCKETS)) / 100
+
+        The message format is "{client_seed}:{nonce}" as documented by
+        platforms including Stake, Primedice, and Bustabit.
+        """
+
+        message = f"{client_seed}:{nonce}".encode()
 
         raw_output = hmac.new(
             server_seed.encode(), message, digestmod=hashlib.sha256
@@ -95,8 +110,8 @@ class ProvablyFairDiceHMACMechanism(RandomnessEngine, VerificationEngine):
 
     def _rejection_sampling(self, digest: bytes) -> int:
         """
-        Maps a 32-byte HMAC digest to an outcome in the range [0, 9999] using
-        rejection sampling.
+        Maps a 32-byte HMAC digest to an outcome in the range [0, MAX_VALUE]
+        using rejection sampling.
         """
 
         for i in range(0, self._CHUNKS_PER_DIGEST):
@@ -104,7 +119,7 @@ class ProvablyFairDiceHMACMechanism(RandomnessEngine, VerificationEngine):
             chunk = int.from_bytes(digest[start : start + self._BYTES_PER_CHUNK], "big")
 
             if chunk < self._REJECTION_THRESHOLD:
-                return chunk % self._N_BUCKETS
+                return (chunk % self._MAX_VALUE) + 1
 
         raise ValueError(
             "Rejection sampling exhausted all chunks in the digest without "
@@ -117,11 +132,16 @@ class ProvablyFairDiceHMACMechanism(RandomnessEngine, VerificationEngine):
     def verify(
         self, record: RollRecord, disclosed_server_seed: str
     ) -> VerificationResult:
+        """
+        Independently recompute the outcome from a disclosed server seed and
+        confirm it matches the recorded outcome. Replicating what a user
+        would do post-game/match/session to verify fairness.
+        """
 
-        message = f"{record.client_seed}{record.nonce}".encode()
+        message = f"{record.client_seed}:{record.nonce}".encode()
 
         recomputed_output = hmac.new(
-            record.server_seed.encode(), message, digestmod=hashlib.sha256
+            disclosed_server_seed.encode(), message, digestmod=hashlib.sha256
         ).digest()
 
         recomputed_outcome = self._rejection_sampling(recomputed_output)
