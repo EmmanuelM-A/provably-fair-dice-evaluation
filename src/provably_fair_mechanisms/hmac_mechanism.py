@@ -19,7 +19,7 @@ class ProvablyFairDiceHMACMechanism(RandomnessEngine, VerificationEngine):
 
     def __init__(self) -> None:
         self._MAX_UNIT32 = 2**32
-        self._MAX_VALUE = 10_000  # [0, MAX_VALUE) -> MAX_VALUE possible outcomes
+        self._MAX_VALUE = 10_000  # [0, MAX_VALUE] -> MAX_VALUE possible outcomes
         self._REJECTION_THRESHOLD = (
             self._MAX_UNIT32 // self._MAX_VALUE
         ) * self._MAX_VALUE
@@ -78,18 +78,15 @@ class ProvablyFairDiceHMACMechanism(RandomnessEngine, VerificationEngine):
         Generates a single provably fair dice outcome.
 
         Process:
-        1.Compute HMAC-SHA256(key=server_seed, msg=f"{client_seed}:{nonce}")
-           to produce 32 bytes of pseudorandom data. HMAC is used instead of
-           plain SHA-256 to prevent length-extension attacks (NIST FIPS 198-1).
-        2. Iterate over the digest in 4-byte chunks, applying rejection sampling
-           to eliminate modulo bias.
-        3. Map the accepted chunk to an outcome in [0, 99.99] using:
-               outcome = floor(chunk / (_REJECTION_THRESHOLD / _N_BUCKETS)) / 100
-
-        The message format is "{client_seed}:{nonce}" as documented by
-        platforms including Stake, Primedice, and Bustabit.
+        - Compute ``HMAC-SHA256(...)`` to produce 32 bytes of pseudorandom data.
+        HMAC is used instead of plain SHA-256 to prevent length-extension
+        attacks (NIST FIPS 198-1).
+        - Iterate over the digest in 4-byte chunks, applying rejection sampling
+        to eliminate modulo bias, to produce the outcome.
         """
 
+        # The same message format used by platforms like Stake, Primedice and
+        # Bustabit
         message = f"{client_seed}:{nonce}".encode()
 
         raw_output = hmac.new(
