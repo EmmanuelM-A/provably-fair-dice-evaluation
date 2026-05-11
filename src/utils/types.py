@@ -2,6 +2,7 @@
 Contains shared types and data structures used throughout the codebase.
 """
 from dataclasses import dataclass
+from datetime import datetime
 
 
 @dataclass
@@ -11,7 +12,7 @@ class ValueRecord:
     nonce: str
     raw_output: bytes
     outcome: int
-    timestamp: float
+    timestamp: datetime
     mechanism_id: str
 
 
