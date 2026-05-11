@@ -6,7 +6,7 @@ from datetime import datetime
 
 
 @dataclass
-class ValueRecord:
+class RollRecord:
     server_seed: str
     client_seed: str
     nonce: str
@@ -18,7 +18,7 @@ class ValueRecord:
 
 @dataclass
 class VerificationResult:
-    record: ValueRecord
+    record: RollRecord
     disclosed_server_seed: str
     recomputed_outcome: int
     match: bool

@@ -6,7 +6,7 @@ implemented provably fair dice mechanism.
 
 from abc import ABC, abstractmethod
 
-from src.utils.types import ValueRecord
+from src.utils.types import RollRecord
 
 
 class RandomnessEngine(ABC):
@@ -37,11 +37,11 @@ class RandomnessEngine(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    def generate_roll(
+    def generate_number(
         self, server_seed: str, client_seed: str, nonce: str
-    ) -> ValueRecord:
+    ) -> RollRecord:
         """
-        Generates a random roll using the provided server seed, client seed
-        and nonce.
+        Generates a random roll number using the provided server seed, client
+        seed and nonce.
         """
         raise NotImplementedError()

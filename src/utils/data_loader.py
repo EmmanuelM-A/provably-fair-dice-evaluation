@@ -10,7 +10,7 @@ from typing import List
 
 import pandas as pd
 
-from src.utils.types import ValueRecord
+from src.utils.types import RollRecord
 
 _logger = logging.getLogger(__name__)
 
@@ -25,7 +25,7 @@ _REQUIRED_COLUMNS = [
 ]
 
 
-def load_rng_data_records_from(file: str | Path) -> List[ValueRecord]:
+def load_rng_data_records_from(file: str | Path) -> List[RollRecord]:
     """
     Loads all the random values (rolls, numbers, etc.) from the
     provided CSV file, validates the required fields, and returns a list of
@@ -75,7 +75,7 @@ def load_rng_data_records_from(file: str | Path) -> List[ValueRecord]:
     return records
 
 
-def _parse_row(row: pd.DataFrame, line_number: int) -> ValueRecord | None:
+def _parse_row(row: pd.DataFrame, line_number: int) -> RollRecord | None:
     """
     Parse and validate a single CSV row into a RollRecord.
     Returns None if any field is missing, null, or unparseable.
@@ -107,7 +107,7 @@ def _parse_row(row: pd.DataFrame, line_number: int) -> ValueRecord | None:
         )
         return None
 
-    return ValueRecord(
+    return RollRecord(
         server_seed=row["server_seed"].strip(),
         client_seed=row["client_seed"].strip(),
         nonce=row["nonce"].strip(),
