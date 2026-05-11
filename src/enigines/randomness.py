@@ -38,7 +38,7 @@ class RandomnessEngine(ABC):
 
     @abstractmethod
     def generate_number(
-        self, server_seed: str, client_seed: str, nonce: str
+        self, server_seed: str, client_seed: str, nonce: str = ""
     ) -> RollRecord:
         """
         Generates a random roll number using the provided server seed, client
