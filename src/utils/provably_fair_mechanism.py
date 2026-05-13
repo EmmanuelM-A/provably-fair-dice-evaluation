@@ -12,7 +12,7 @@ from src.utils.types import RollRecord, VerificationResult
 
 class ProvablyFairDiceMechanism(RandomnessEngine, VerificationEngine):
     """
-    Utility interface to provide a whole provably fiar mechanism interface.
+    Utility interface to provide a whole provably fair mechanism interface.
     """
 
     def get_entropy(self) -> bytes:
