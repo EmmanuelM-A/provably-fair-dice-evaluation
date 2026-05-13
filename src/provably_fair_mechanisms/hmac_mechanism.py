@@ -4,8 +4,10 @@ import hmac
 import os
 from datetime import datetime, timezone
 
+from src.config.configs import MAX_VALUE, REJECTION_THRESHOLD
 from src.enigines.randomness import RandomnessEngine
 from src.enigines.verification import VerificationEngine
+from src.utils.output_to_outcome_mapping import rejection_sampling
 from src.utils.types import RollRecord, VerificationResult
 
 
@@ -93,7 +95,11 @@ class ProvablyFairDiceHMACMechanism(RandomnessEngine, VerificationEngine):
             server_seed.encode(), message, digestmod=hashlib.sha256
         ).digest()
 
-        outcome = self._rejection_sampling(raw_output)
+        outcome = rejection_sampling(
+            raw_output=raw_output,
+            rejection_threshold=REJECTION_THRESHOLD,
+            max_value=MAX_VALUE,
+        )
 
         return RollRecord(
             server_seed=server_seed,
@@ -103,25 +109,6 @@ class ProvablyFairDiceHMACMechanism(RandomnessEngine, VerificationEngine):
             outcome=outcome,
             timestamp=datetime.now(timezone.utc),
             mechanism_id=self.MECHANISM_ID,
-        )
-
-    def _rejection_sampling(self, digest: bytes) -> int:
-        """
-        Maps a 32-byte HMAC digest to an outcome in the range [0, MAX_VALUE]
-        using rejection sampling.
-        """
-
-        for i in range(0, self._CHUNKS_PER_DIGEST):
-            start = i * self._BYTES_PER_CHUNK
-            chunk = int.from_bytes(digest[start : start + self._BYTES_PER_CHUNK], "big")
-
-            if chunk < self._REJECTION_THRESHOLD:
-                return (chunk % self._MAX_VALUE) + 1
-
-        raise ValueError(
-            "Rejection sampling exhausted all chunks in the digest without "
-            "finding an accepted value. This is an incredibly rare event "
-            "and likely indicates a bug in the digest or threshold calculation."
         )
 
     # ======================= VERIFICATION OPERATIONS =======================
