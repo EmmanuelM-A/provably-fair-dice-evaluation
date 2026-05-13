@@ -38,7 +38,14 @@ def _get_request(path: str) -> dict:
             response = requests.get(url, timeout=10)
             response.raise_for_status()
             return response.json()
+        except requests.HTTPError:
+            # HTTP errors (4xx/5xx) mean the server responded — both endpoints
+            # will return the same status for a missing/future round, so don't
+            # fall back; let the caller handle it.
+            raise
         except requests.RequestException as exc:
+            # Network-level failure (timeout, connection refused, etc.) —
+            # worth trying the next endpoint.
             _logger.warning(f"Endpoint {endpoint} failed: {exc}, trying next...")
 
     raise ConnectionError(f"All drand endpoints failed for path: {path}")
@@ -58,7 +65,7 @@ def fetch_latest_beacon() -> dict:
     format:
     {
         "round": 1234567,
-        "randomness": "a3f8c2...",   <- 64 hex chars = 32 bytes
+        "randomness": "a3f8c2...", <- 64 hex chars = 32 bytes
         "signature": "b1d4e9..."
     }
     """
@@ -93,8 +100,8 @@ Each roll uses the beacon from a sequential round number, starting from the
 latest round at script start. One beacon = one roll.
 
 Usage:
-    python scripts/generate_drand_rolls.py --count N optional[--output] filepath
-    python scripts/generate_drand_rolls.py --count 100
+    python -m scripts/generate_drand_rolls --count N optional[--output] filepath
+    python -m scripts/generate_drand_rolls --count 100
 """
 
 DEFAULT_OUTPUT = "data/rolls/drand_rolls.csv"
@@ -166,8 +173,9 @@ def main():
             try:
                 beacon = fetch_beacon_by_round(target_round)
             except requests.HTTPError as exc:
-                if exc.response.status_code == 404:
-                    # Round not published yet. Wait one period and retry.
+                if exc.response.status_code in (404, 425):
+                    # Round not published yet (404 = not found, 425 = too early).
+                    # Wait one period and retry.
                     _logger.debug(
                         f"Round {target_round} not yet available, "
                         f"waiting {period_seconds}s..."
