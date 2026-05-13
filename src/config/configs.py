@@ -1,6 +1,5 @@
 """
-Configuration settings for the DocuChatAPI application.
-Each configuration class handles a specific domain of settings.
+Configuration settings for the Provably Fair Dice Evaluation Framework.
 """
 
 from pathlib import Path

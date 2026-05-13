@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 import pandas as pd
 import requests
 
-from src.config.configs import REJECTION_THRESHOLD, MAX_VALUE
+from src.config.configs import REJECTION_THRESHOLD, MAX_VALUE, DATE_FORMAT
 from src.logger.base_logger import BaseLogger
 from src.utils.output_to_outcome_mapping import rejection_sampling
 
@@ -39,12 +39,12 @@ def _get_request(path: str) -> dict:
             response.raise_for_status()
             return response.json()
         except requests.HTTPError:
-            # HTTP errors (4xx/5xx) mean the server responded — both endpoints
+            # HTTP errors (4xx/5xx) mean the server responded, both endpoints
             # will return the same status for a missing/future round, so don't
             # fall back; let the caller handle it.
             raise
         except requests.RequestException as exc:
-            # Network-level failure (timeout, connection refused, etc.) —
+            # Network-level failure (timeout, connection refused, etc.)
             # worth trying the next endpoint.
             _logger.warning(f"Endpoint {endpoint} failed: {exc}, trying next...")
 
@@ -126,9 +126,7 @@ def main():
     )
     args = parser.parse_args()
 
-    # ------------------------------------------------------------------
-    # Session setup
-    # ------------------------------------------------------------------
+    # ========================= Session setup =========================
 
     # Fetch chain info once per session. The chain hash acts as the server_seed
     # for the entire session — it is the public identifier of the randomness
@@ -152,9 +150,7 @@ def main():
     start_round = latest_beacon["round"]
     _logger.info(f"Starting from round {start_round}")
 
-    # ------------------------------------------------------------------
-    # Roll generation
-    # ------------------------------------------------------------------
+    # ======================== Roll generation ========================
 
     records = []
 
@@ -198,25 +194,23 @@ def main():
             {
                 # server_seed is the chain hash set once at session start.
                 "server_seed": server_seed,
-                # client_seed is empty — neither the player nor the platform
+                # client_seed is empty, neither the player nor the platform
                 # supplies any input to drand. This is architecturally significant.
                 "client_seed": "",
-                # nonce is the round number — drand's monotonically incrementing
+                # nonce is the round number, drand's monotonically incrementing
                 # counter that uniquely identifies each beacon.
                 "nonce": target_round,
                 # raw_output stored as hex so it survives serialisation round-trips.
                 "raw_output": raw_output.hex(),
                 "outcome": outcome,
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(timezone.utc).strftime(DATE_FORMAT),
                 "mechanism_id": MECHANISM_ID,
             }
         )
 
         _logger.info(f"Round {target_round} -> outcome={outcome}")
 
-    # ------------------------------------------------------------------
-    # Write output
-    # ------------------------------------------------------------------
+    # ========================== Write output ==========================
 
     df = pd.DataFrame(records)
 
