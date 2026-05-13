@@ -20,6 +20,7 @@ build/
 
 # Logs
 logs/*.log
+logs/
 
 # Generated data
 data/rolls/
