@@ -7,7 +7,7 @@ import os
 import sys
 from typing import List
 
-from src.config.configs import settings
+from src.config.configs import LOG_FORMAT, DATE_FORMAT, LOG_DIRECTORY
 from src.logger.logging_utils import (
     ColorFormatter,
     LogLevel,
@@ -39,11 +39,11 @@ class BaseLogger:
         self.handlers: List[logging.Handler] = []
 
         # Determine log directory
-        self.log_path = settings.app.LOG_DIRECTORY
+        self.log_path = LOG_DIRECTORY
         os.makedirs(self.log_path, exist_ok=True)
 
         # Configure level and format
-        log_level = get_log_level(settings.logging.LOG_LEVEL)  # Default is DEBUG
+        log_level = get_log_level(LogLevel.DEBUG)  # Default is DEBUG
         self.logger.setLevel(log_level)
 
         # Avoid duplicate handlers if re-instantiated
@@ -53,12 +53,12 @@ class BaseLogger:
 
         # Formatter setup
         file_formatter = logging.Formatter(
-            fmt=settings.app.LOG_FORMAT,
-            datefmt=settings.app.DATE_FORMAT,
+            fmt=LOG_FORMAT,
+            datefmt=DATE_FORMAT,
         )
         console_formatter = ColorFormatter(
-            fmt=settings.app.LOG_FORMAT,
-            datefmt=settings.app.DATE_FORMAT,
+            fmt=LOG_FORMAT,
+            datefmt=DATE_FORMAT,
         )
 
         match log_to:
