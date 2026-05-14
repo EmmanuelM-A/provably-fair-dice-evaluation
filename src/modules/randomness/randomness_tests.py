@@ -146,5 +146,4 @@ class RandomnessTests:
             nist_in_depth=nist_in_depth,
             entropy_monitoring=entropy_monitoring,
         )
-        print(f"Randomness evaluation complete. Summary: {result.summary}")
         return result
