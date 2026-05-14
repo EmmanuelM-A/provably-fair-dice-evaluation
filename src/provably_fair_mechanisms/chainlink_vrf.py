@@ -160,7 +160,7 @@ class ChainlinkVRFMechanism(ProvablyFairDiceMechanism):
             "Check your subscription balance at vrf.chain.link."
         )
 
-    def generate_rolls(self, quantity: int) -> List[RollRecord]:
+    def generate_rolls(self, quantity: int, save_rolls: bool = True) -> List[RollRecord]:
         self._logger.info(f"Coordinator (server_seed): {self._coordinator_address}")
         self._logger.info(f"Consumer (client_seed): {self._consumer_address}")
 
@@ -205,10 +205,13 @@ class ChainlinkVRFMechanism(ProvablyFairDiceMechanism):
             self._logger.info(f"requestId={request_id} -> outcome={outcome}")
 
         df = pd.DataFrame(records)
-        os.makedirs(os.path.dirname(self._output_file), exist_ok=True)
-        df.to_csv(self._output_file, index=False)
 
-        self._logger.info(f"Done. {len(df)} rolls written to {self._output_file}")
+        if save_rolls:
+            os.makedirs(os.path.dirname(self._output_file), exist_ok=True)
+            df.to_csv(self._output_file, index=False)
+            self._logger.info(f"Done. {len(df)} rolls written to {self._output_file}")
+        else:
+            self._logger.info(f"Done. {len(df)} rolls generated (not saved).")
 
         return rolls
 

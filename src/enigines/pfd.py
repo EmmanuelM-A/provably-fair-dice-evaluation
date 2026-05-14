@@ -21,7 +21,7 @@ class ProvablyFairDiceMechanism(ABC):
     # ========================= Randomness Generation =========================
 
     @abstractmethod
-    def generate_rolls(self, quantity: int) -> List[RollRecord]:
+    def generate_rolls(self, quantity: int, save_rolls: bool = True) -> List[RollRecord]:
         raise NotImplementedError()
 
     # ============================= Verification =============================

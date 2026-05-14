@@ -89,7 +89,7 @@ class DrandMechanism(ProvablyFairDiceMechanism):
 
     # ======================== RANDOMNESS OPERATIONS ========================
 
-    def generate_rolls(self, quantity: int) -> List[RollRecord]:
+    def generate_rolls(self, quantity: int, save_rolls: bool = True) -> List[RollRecord]:
         # Fetch chain info once per session. The chain hash acts as the server_seed
         # for the entire session — it is the public identifier of the randomness
         # source and does not change between rolls.
@@ -185,11 +185,12 @@ class DrandMechanism(ProvablyFairDiceMechanism):
 
         df = pd.DataFrame(records)
 
-        # Ensure the output directory exists before writing.
-        os.makedirs(os.path.dirname(self._output_file), exist_ok=True)
-        df.to_csv(self._output_file, index=False)
-
-        self._logger.info(f"Done. {len(df)} rolls written to {self._output_file}")
+        if save_rolls:
+            os.makedirs(os.path.dirname(self._output_file), exist_ok=True)
+            df.to_csv(self._output_file, index=False)
+            self._logger.info(f"Done. {len(df)} rolls written to {self._output_file}")
+        else:
+            self._logger.info(f"Done. {len(df)} rolls generated (not saved).")
 
         return rolls
 

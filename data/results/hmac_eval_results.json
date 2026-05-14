@@ -1,373 +1,58 @@
 {
   "mechanism": "HMAC-SHA256 Mechanism",
-  "saved_at": "2026-05-14 06:56:37",
-  "randomness": {
+  "saved_at": "2026-05-14 07:26:40",
+  "randomness": null,
+  "security": null,
+  "performance": null,
+  "transparency": {
     "n_rolls": 1000,
-    "n_bits": 256000,
-    "sanity_check": {
-      "passed": true,
-      "chi_square_stat": 1957.9051999999997,
-      "p_value": 0.0,
-      "message": "Sanity check passed: biased die correctly rejected (chi2=1957.91, p=0.0000e+00)."
-    },
-    "distribution": {
-      "chi_square": {
-        "test_name": "Chi-Square Uniformity Test",
-        "p_value": 0.6119964687465987,
-        "passed": true,
-        "parameters_used": {
-          "n_rolls_observed": 1000,
-          "n_rolls_expected_parameter": 10000,
-          "n_faces": 100,
-          "degrees_of_freedom": 99,
-          "expected_frequency_per_bin": 10.0,
-          "chi_sq": 94.40000000000002,
-          "observed_counts": [
-            12.0,
-            6.0,
-            10.0,
-            8.0,
-            10.0,
-            11.0,
-            8.0,
-            12.0,
-            6.0,
-            5.0,
-            10.0,
-            7.0,
-            13.0,
-            10.0,
-            11.0,
-            15.0,
-            12.0,
-            6.0,
-            10.0,
-            9.0,
-            10.0,
-            9.0,
-            15.0,
-            12.0,
-            11.0,
-            12.0,
-            10.0,
-            11.0,
-            11.0,
-            16.0,
-            12.0,
-            11.0,
-            7.0,
-            12.0,
-            9.0,
-            8.0,
-            13.0,
-            13.0,
-            6.0,
-            9.0,
-            4.0,
-            9.0,
-            9.0,
-            5.0,
-            11.0,
-            14.0,
-            12.0,
-            9.0,
-            13.0,
-            6.0,
-            10.0,
-            8.0,
-            9.0,
-            12.0,
-            4.0,
-            8.0,
-            8.0,
-            13.0,
-            10.0,
-            14.0,
-            12.0,
-            13.0,
-            8.0,
-            12.0,
-            10.0,
-            6.0,
-            9.0,
-            4.0,
-            4.0,
-            14.0,
-            7.0,
-            10.0,
-            17.0,
-            12.0,
-            9.0,
-            7.0,
-            14.0,
-            13.0,
-            13.0,
-            10.0,
-            13.0,
-            6.0,
-            8.0,
-            17.0,
-            16.0,
-            16.0,
-            8.0,
-            12.0,
-            9.0,
-            15.0,
-            6.0,
-            9.0,
-            7.0,
-            9.0,
-            8.0,
-            6.0,
-            7.0,
-            9.0,
-            12.0,
-            7.0
-          ]
-        }
-      },
-      "cramer_von_mises": {
-        "test_name": "Cramer-von Mises Uniformity Test",
-        "p_value": 0.7703676934602023,
-        "passed": true,
-        "parameters_used": {
-          "n_rolls": 1000,
-          "n_faces_inferred": 100,
-          "statistic": 0.06697449239873478,
-          "normalisation": "(outcome - 1) / (n_faces - 1)",
-          "reference_cdf": "uniform(0, 1)"
-        }
-      },
-      "runs_independence": {
-        "test_name": "Runs Independence Test",
-        "p_value": 0.28205566107789903,
-        "passed": true,
-        "parameters_used": {
-          "n_rolls": 1000,
-          "median": 50.5,
-          "n_above_median": 500,
-          "n_below_or_equal_median": 500,
-          "observed_runs": 518,
-          "expected_runs": 501.0,
-          "variance_runs": 249.74974974974975,
-          "z_statistic": 1.0757129341200962
-        }
-      }
-    },
-    "nist_light": {
-      "frequency_monobit": {
-        "test_name": "Frequency (Monobit) Test",
-        "p_value": 0.6018264313201052,
-        "passed": true,
-        "parameters_used": {
-          "n": 256000,
-          "s_obs": 0.5217758139277826
-        }
-      },
-      "frequency_block": {
-        "test_name": "Frequency within a Block",
-        "p_value": 0.9467435290073907,
-        "passed": true,
-        "parameters_used": {
-          "n": 256000,
-          "M": 128,
-          "N": 2000,
-          "chi_sq": 1899.0
-        }
-      },
-      "runs": {
-        "test_name": "Runs Test",
-        "p_value": 0.4017260591286611,
-        "passed": true,
-        "parameters_used": {
-          "n": 256000,
-          "pi": 0.500515625,
-          "v_obs": 128212
-        }
-      },
-      "longest_run_ones": {
-        "test_name": "Longest Run of Ones in a Block",
-        "p_value": 0.0,
-        "passed": false,
-        "parameters_used": {
-          "n": 256000,
-          "M": 8,
-          "N": 32000,
-          "chi_sq": 3352.0115799656614
-        }
-      },
-      "binary_matrix_rank": {
-        "test_name": "Binary Matrix Rank Test",
-        "p_value": 0.2934670685519948,
-        "passed": true,
-        "parameters_used": {
-          "n": 256000,
-          "M": 32,
-          "Q": 32,
-          "num_matrices": 250,
-          "chi_sq": 2.451979697115465
-        }
-      },
-      "dft_spectral": {
-        "test_name": "Discrete Fourier Transform (Spectral) Test",
-        "p_value": 0.2845844398603402,
-        "passed": true,
-        "parameters_used": {
-          "n": 256000,
-          "threshold": 875.7325288831059,
-          "n_below_threshold": 121659,
-          "expected_below_threshold": 121600.0
-        }
-      },
-      "cumulative_sums": {
-        "test_name": "Cumulative Sums Test",
-        "p_value": 0.602271985743727,
-        "passed": true,
-        "parameters_used": {
-          "n": 256000,
-          "p_value_forward": 0.602271985743727,
-          "p_value_backward": 0.9804477483452183
-        }
-      }
-    },
-    "nist_in_depth": null,
-    "entropy_monitoring": {
-      "repetition_count": {
-        "alarms_triggered": 0,
-        "alarm_positions": [],
-        "passed": true,
-        "parameters_used": {
-          "n_samples": 1000,
-          "threshold_c": 20
-        }
-      },
-      "adaptive_proportion": {
-        "alarms_triggered": 0,
-        "alarm_positions": [],
-        "passed": true,
-        "parameters_used": {
-          "n_samples": 1000,
-          "window_w": 512,
-          "threshold": 120
-        }
-      }
-    },
-    "summary": {
-      "sanity_check": true,
-      "chi_square": true,
-      "cramer_von_mises": true,
-      "runs_independence": true,
-      "repetition_count": true,
-      "adaptive_proportion": true,
-      "nist_light_all_passed": false
-    }
-  },
-  "security": {
-    "n_rolls": 1000,
-    "seed_reuse": {
-      "test_name": "seed_reuse",
+    "determinism": {
+      "test_name": "determinism",
       "passed": false,
-      "message": "1 server seed(s) reused; 1 client seed(s) reused.",
+      "message": "989 of 1000 record(s) failed to reproduce. Disclosure integrity failure \u2014 further investigation required.",
       "details": {
         "n_records": 1000,
-        "n_reused_server_seeds": 1,
-        "n_reused_client_seeds": 1
+        "n_passed": 11,
+        "n_mismatches": 989,
+        "mismatch_indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19
+        ]
       }
     },
-    "nonce_presence": {
-      "test_name": "nonce_presence",
+    "mapping_reproducibility": {
+      "test_name": "outcome_mapping_reproducibility",
       "passed": true,
-      "message": "All 1000 records have a non-zero nonce.",
+      "message": "All 1000 records reproduced via the mapping function \u2014 outcome mapping is independently reproducible.",
       "details": {
         "n_records": 1000,
-        "n_missing": 0
-      }
-    },
-    "nonce_uniqueness": {
-      "test_name": "nonce_uniqueness",
-      "passed": true,
-      "message": "All 1000 nonce values are unique.",
-      "details": {
-        "n_records": 1000,
-        "n_duplicate_nonces": 0,
-        "n_duplicate_rolls": 0
-      }
-    },
-    "nonce_min_entropy": 9.965784284662087,
-    "summary": {
-      "seed_reuse": false,
-      "nonce_presence": true,
-      "nonce_uniqueness": true,
-      "nonce_min_entropy_bits": 9.9658
-    }
-  },
-  "performance": {
-    "latency": {
-      "test_name": "dice_generation_latency",
-      "n_requests": 1000,
-      "mean_ms": 3.513107800317812,
-      "median_ms": 3.463749999355059,
-      "p75_ms": 3.8374249925254844,
-      "p90_ms": 4.156020007212646,
-      "p99_ms": 4.927889993414283,
-      "min_ms": 2.176599999074824,
-      "max_ms": 12.826500009396113,
-      "std_ms": 0.6676701297791805
-    },
-    "startup_steady_state": {
-      "test_name": "startup_vs_steady_state",
-      "n_requests": 10000,
-      "cov_threshold": 0.02,
-      "startup_n": 10000,
-      "startup_mean_ms": 3.5330494200170506,
-      "startup_std_ms": 0.752323094827487,
-      "steady_state_n": 0,
-      "steady_state_mean_ms": 0.0,
-      "steady_state_std_ms": 0.0,
-      "steady_state_cov": 0.0,
-      "steady_state_declared_at": -1
-    },
-    "throughput_under_load": {
-      "10": {
-        "concurrency": 10,
-        "actual_workers": 10,
-        "n_requests": 200,
-        "requests_per_second": 813.1152233063029,
-        "mean_latency_ms": 11.466544499344309,
-        "p99_latency_ms": 16.50793199485633
-      },
-      "100": {
-        "concurrency": 100,
-        "actual_workers": 100,
-        "n_requests": 200,
-        "requests_per_second": 767.9211682564337,
-        "mean_latency_ms": 97.39119900143123,
-        "p99_latency_ms": 126.36505599846714
-      },
-      "1000": {
-        "concurrency": 1000,
-        "actual_workers": 200,
-        "n_requests": 200,
-        "requests_per_second": 735.5385760756477,
-        "mean_latency_ms": 138.83114600015688,
-        "p99_latency_ms": 191.70282000719453
-      },
-      "10000": {
-        "concurrency": 10000,
-        "actual_workers": 200,
-        "n_requests": 200,
-        "requests_per_second": 704.5041769994468,
-        "mean_latency_ms": 148.35404900040885,
-        "p99_latency_ms": 206.14708599241567
+        "n_passed": 1000,
+        "n_mismatches": 0,
+        "n_mapping_errors": 0,
+        "mismatch_indices": []
       }
     },
     "summary": {
-      "mean_latency_ms": 3.5131,
-      "p99_latency_ms": 4.9279,
-      "steady_state_reached": false,
-      "steady_state_mean_ms": 0.0,
-      "peak_requests_per_second": 813.12
+      "determinism": false,
+      "mapping_reproducibility": true
     }
-  },
-  "transparency": null
+  }
 }

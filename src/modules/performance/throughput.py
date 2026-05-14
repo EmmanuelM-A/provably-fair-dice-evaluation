@@ -100,7 +100,7 @@ def measure_throughput_under_load(
 
     def _roll(_: int) -> float:
         t0 = time.perf_counter()
-        mechanism.generate_rolls(1)
+        mechanism.generate_rolls(1, save_rolls=False)
         return (time.perf_counter() - t0) * 1_000
 
     results: Dict[int, ConcurrencyResult] = {}
