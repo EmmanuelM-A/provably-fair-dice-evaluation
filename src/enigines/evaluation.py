@@ -2,7 +2,7 @@ import dataclasses
 import json
 import os
 from datetime import datetime, timezone
-from typing import Any, List, Optional
+from typing import Any, Callable, List, Optional
 
 import numpy as np
 
@@ -13,6 +13,7 @@ from src.logger.base_logger import BaseLogger
 from src.modules.performance.performance_tests import PerformanceEvaluationResult, PerformanceTests
 from src.modules.randomness.randomness_tests import RandomnessEvaluationResult, RandomnessTests
 from src.modules.security.security_tests import SecurityEvaluationResult, SecurityTests
+from src.modules.transparency.transparency_tests import TransparencyEvaluationResult, TransparencyTests
 from src.utils.types import RollRecord
 
 
@@ -47,6 +48,7 @@ class EvaluationEngine:
         self._randomness_result: Optional[RandomnessEvaluationResult] = None
         self._security_result: Optional[SecurityEvaluationResult] = None
         self._performance_result: Optional[PerformanceEvaluationResult] = None
+        self._transparency_result: Optional[TransparencyEvaluationResult] = None
 
     def evaluate_randomness(self, rolls: List[RollRecord]) -> RandomnessEvaluationResult:
         result = RandomnessTests(self.config).run(rolls)
@@ -73,8 +75,18 @@ class EvaluationEngine:
         self._performance_result = result
         return result
 
-    def evaluate_transparency(self) -> None:
-        pass
+    def evaluate_transparency(
+        self,
+        rolls: List[RollRecord],
+        mapping_fn: Optional[Callable[[bytes], int]] = None,
+    ) -> TransparencyEvaluationResult:
+        result = TransparencyTests(self.config).run(
+            rolls=rolls,
+            mechanism=self.mechanism,
+            mapping_fn=mapping_fn,
+        )
+        self._transparency_result = result
+        return result
 
     def save_results(self, path: str) -> None:
         """
@@ -87,7 +99,7 @@ class EvaluationEngine:
             "randomness":  { ... } | null,
             "security":    { ... } | null,
             "performance": { ... } | null,
-            "transparency": null
+            "transparency": { ... } | null
         }
         """
         payload: dict[str, Any] = {
@@ -108,7 +120,11 @@ class EvaluationEngine:
                 if self._performance_result is not None
                 else None
             ),
-            "transparency": None,
+            "transparency": (
+                dataclasses.asdict(self._transparency_result)
+                if self._transparency_result is not None
+                else None
+            ),
         }
 
         os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
