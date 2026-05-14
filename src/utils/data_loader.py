@@ -45,7 +45,9 @@ def load_roll_records_from(file: str | Path) -> List[RollRecord]:
 
     original_len = len(df)
     df = df.dropna(subset=_REQUIRED_COLUMNS)
-    df = df[df[_REQUIRED_COLUMNS].apply(lambda col: col.str.strip() != "").all(axis=1)]
+    str_cols = [c for c in _REQUIRED_COLUMNS if df[c].dtype == object]
+    if str_cols:
+        df = df[df[str_cols].apply(lambda col: col.str.strip() != "").all(axis=1)]
     dropped = original_len - len(df)
 
     if dropped > 0:
@@ -110,7 +112,7 @@ def _parse_row(row: pd.DataFrame, line_number: int) -> RollRecord | None:
     return RollRecord(
         server_seed=row["server_seed"].strip(),
         client_seed=row["client_seed"].strip(),
-        nonce=row["nonce"].strip(),
+        nonce=int(row["nonce"]),
         raw_output=raw_output,
         outcome=outcome,
         timestamp=timestamp,

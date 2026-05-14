@@ -6,10 +6,9 @@ from src.provably_fair_mechanisms.hmac_mechanism import HMACMechanism
 from src.utils.data_loader import load_roll_records_from
 
 HMAC_OUTPUT = "data/rolls/hmac_rolls.csv"
+HMAC_RESULTS = "data/results/hmac_eval_results.json"
 
-# Config for the HMAC mechanism: outcomes are in [1, MAX_VALUE].
-# Chi-square requires at least 5 * n_faces rolls, so with MAX_VALUE=10000
-# you need >=50,000 rolls. Lower n_faces (e.g. 6) for a 6-sided die interpretation.
+
 HMAC_CONFIG = EvaluationConfig(
     n_faces=MAX_VALUE,
     distribution_min_rolls=500,
@@ -31,8 +30,8 @@ def main():
     rolls = load_roll_records_from(HMAC_OUTPUT)
 
     mechanism_eval = EvaluationEngine(mechanism=mechanism, config=HMAC_CONFIG)
-    result = mechanism_eval.evaluate_randomness(rolls)
-    print(result.summary)
+    mechanism_eval.evaluate_randomness(rolls)
+    mechanism_eval.save_results(HMAC_RESULTS)
 
 
 if __name__ == "__main__":

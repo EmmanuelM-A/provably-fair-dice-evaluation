@@ -1,0 +1,268 @@
+{
+  "mechanism": "HMAC-SHA256 Mechanism",
+  "saved_at": "2026-05-14 05:23:00",
+  "randomness": {
+    "n_rolls": 1000,
+    "n_bits": 256000,
+    "sanity_check": {
+      "passed": true,
+      "chi_square_stat": 2004.1963999999998,
+      "p_value": 0.0,
+      "message": "Sanity check passed: biased die correctly rejected (chi2=2004.20, p=0.0000e+00)."
+    },
+    "distribution": {
+      "chi_square": {
+        "test_name": "Chi-Square Uniformity Test",
+        "p_value": 0.6119964687465987,
+        "passed": true,
+        "parameters_used": {
+          "n_rolls_observed": 1000,
+          "n_rolls_expected_parameter": 10000,
+          "n_faces": 100,
+          "degrees_of_freedom": 99,
+          "expected_frequency_per_bin": 10.0,
+          "chi_sq": 94.40000000000002,
+          "observed_counts": [
+            12.0,
+            6.0,
+            10.0,
+            8.0,
+            10.0,
+            11.0,
+            8.0,
+            12.0,
+            6.0,
+            5.0,
+            10.0,
+            7.0,
+            13.0,
+            10.0,
+            11.0,
+            15.0,
+            12.0,
+            6.0,
+            10.0,
+            9.0,
+            10.0,
+            9.0,
+            15.0,
+            12.0,
+            11.0,
+            12.0,
+            10.0,
+            11.0,
+            11.0,
+            16.0,
+            12.0,
+            11.0,
+            7.0,
+            12.0,
+            9.0,
+            8.0,
+            13.0,
+            13.0,
+            6.0,
+            9.0,
+            4.0,
+            9.0,
+            9.0,
+            5.0,
+            11.0,
+            14.0,
+            12.0,
+            9.0,
+            13.0,
+            6.0,
+            10.0,
+            8.0,
+            9.0,
+            12.0,
+            4.0,
+            8.0,
+            8.0,
+            13.0,
+            10.0,
+            14.0,
+            12.0,
+            13.0,
+            8.0,
+            12.0,
+            10.0,
+            6.0,
+            9.0,
+            4.0,
+            4.0,
+            14.0,
+            7.0,
+            10.0,
+            17.0,
+            12.0,
+            9.0,
+            7.0,
+            14.0,
+            13.0,
+            13.0,
+            10.0,
+            13.0,
+            6.0,
+            8.0,
+            17.0,
+            16.0,
+            16.0,
+            8.0,
+            12.0,
+            9.0,
+            15.0,
+            6.0,
+            9.0,
+            7.0,
+            9.0,
+            8.0,
+            6.0,
+            7.0,
+            9.0,
+            12.0,
+            7.0
+          ]
+        }
+      },
+      "cramer_von_mises": {
+        "test_name": "Cramer-von Mises Uniformity Test",
+        "p_value": 0.7703676934602023,
+        "passed": true,
+        "parameters_used": {
+          "n_rolls": 1000,
+          "n_faces_inferred": 100,
+          "statistic": 0.06697449239873478,
+          "normalisation": "(outcome - 1) / (n_faces - 1)",
+          "reference_cdf": "uniform(0, 1)"
+        }
+      },
+      "runs_independence": {
+        "test_name": "Runs Independence Test",
+        "p_value": 0.28205566107789903,
+        "passed": true,
+        "parameters_used": {
+          "n_rolls": 1000,
+          "median": 50.5,
+          "n_above_median": 500,
+          "n_below_or_equal_median": 500,
+          "observed_runs": 518,
+          "expected_runs": 501.0,
+          "variance_runs": 249.74974974974975,
+          "z_statistic": 1.0757129341200962
+        }
+      }
+    },
+    "nist_light": {
+      "frequency_monobit": {
+        "test_name": "Frequency (Monobit) Test",
+        "p_value": 0.6018264313201052,
+        "passed": true,
+        "parameters_used": {
+          "n": 256000,
+          "s_obs": 0.5217758139277826
+        }
+      },
+      "frequency_block": {
+        "test_name": "Frequency within a Block",
+        "p_value": 0.9467435290073907,
+        "passed": true,
+        "parameters_used": {
+          "n": 256000,
+          "M": 128,
+          "N": 2000,
+          "chi_sq": 1899.0
+        }
+      },
+      "runs": {
+        "test_name": "Runs Test",
+        "p_value": 0.4017260591286611,
+        "passed": true,
+        "parameters_used": {
+          "n": 256000,
+          "pi": 0.500515625,
+          "v_obs": 128212
+        }
+      },
+      "longest_run_ones": {
+        "test_name": "Longest Run of Ones in a Block",
+        "p_value": 0.0,
+        "passed": false,
+        "parameters_used": {
+          "n": 256000,
+          "M": 8,
+          "N": 32000,
+          "chi_sq": 3352.0115799656614
+        }
+      },
+      "binary_matrix_rank": {
+        "test_name": "Binary Matrix Rank Test",
+        "p_value": 0.2934670685519948,
+        "passed": true,
+        "parameters_used": {
+          "n": 256000,
+          "M": 32,
+          "Q": 32,
+          "num_matrices": 250,
+          "chi_sq": 2.451979697115465
+        }
+      },
+      "dft_spectral": {
+        "test_name": "Discrete Fourier Transform (Spectral) Test",
+        "p_value": 0.2845844398603402,
+        "passed": true,
+        "parameters_used": {
+          "n": 256000,
+          "threshold": 875.7325288831059,
+          "n_below_threshold": 121659,
+          "expected_below_threshold": 121600.0
+        }
+      },
+      "cumulative_sums": {
+        "test_name": "Cumulative Sums Test",
+        "p_value": 0.602271985743727,
+        "passed": true,
+        "parameters_used": {
+          "n": 256000,
+          "p_value_forward": 0.602271985743727,
+          "p_value_backward": 0.9804477483452183
+        }
+      }
+    },
+    "nist_in_depth": null,
+    "entropy_monitoring": {
+      "repetition_count": {
+        "alarms_triggered": 0,
+        "alarm_positions": [],
+        "passed": true,
+        "parameters_used": {
+          "n_samples": 1000,
+          "threshold_c": 20
+        }
+      },
+      "adaptive_proportion": {
+        "alarms_triggered": 0,
+        "alarm_positions": [],
+        "passed": true,
+        "parameters_used": {
+          "n_samples": 1000,
+          "window_w": 512,
+          "threshold": 120
+        }
+      }
+    },
+    "summary": {
+      "sanity_check": true,
+      "chi_square": true,
+      "cramer_von_mises": true,
+      "runs_independence": true,
+      "repetition_count": true,
+      "adaptive_proportion": true,
+      "nist_light_all_passed": false
+    }
+  },
+  "security": null,
+  "performance": null,
+  "transparency": null
+}
