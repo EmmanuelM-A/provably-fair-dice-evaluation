@@ -2,10 +2,10 @@
 import argparse
 from typing import List
 
+from src.enigines.evaluation import EvaluationEngine
 from src.provably_fair_mechanisms.chainlink_vrf import ChainlinkVRFMechanism
 from src.provably_fair_mechanisms.drand_mechanism import DrandMechanism
 from src.provably_fair_mechanisms.hmac_mechanism import HMACMechanism
-from src.enigines.pfd import ProvablyFairDiceMechanism
 
 
 def main():
@@ -26,19 +26,18 @@ def main():
 
     # ========================= Setup Mechanisms =========================
     
-    mechanisms: List[ProvablyFairDiceMechanism] = []
+    hmac = HMACMechanism(output_file=HAMC_OUTPUT)
+    drand = DrandMechanism(output_file=DRAND_OUTPUT)
     
-    mechanisms.append(HMACMechanism(output_file=HAMC_OUTPUT))
-    mechanisms.append(DrandMechanism(output_file=DRAND_OUTPUT))
-    
-    # Note: High quanities may take a while due to fulliment rates.
-    mechanisms.append(ChainlinkVRFMechanism(output_file=CHAINLINK_OUTPUT))
+    # Note: High quanities may take a while due to very slow fulliment rates.
+    chainlink_vrf = ChainlinkVRFMechanism(output_file=CHAINLINK_OUTPUT)
     
     # ========================= Evaluation Engine =========================
     
-    for mech in mechanisms:
-        rolls = mech.generate_rolls(args.count)
-        print(f"{mech.__str__} generated {len(rolls)} rolls.")
+    hmac_rolls = hmac.generate_rolls(args.count)
+    hmac_eval = EvaluationEngine(mechanism=hmac)
+    hmac_eval.evaluate_randomness(hmac_rolls)
+
 
 
 if __name__ == "__main__":

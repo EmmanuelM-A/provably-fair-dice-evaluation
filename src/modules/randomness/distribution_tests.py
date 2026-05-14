@@ -17,6 +17,7 @@ from typing import List
 import numpy as np
 from scipy import stats
 
+from src.config.configs import MAX_VALUE
 from src.modules.data import TestResult
 
 
@@ -49,7 +50,7 @@ def _check_expected_frequency(n_rolls: int, n_bins: int, test_name: str) -> None
 
 def chi_square_test(
     outcomes: List[int],
-    n_faces: int = 6,
+    n_faces: int = MAX_VALUE,
     n_rolls: int = 10_000,
 ) -> TestResult:
     """
