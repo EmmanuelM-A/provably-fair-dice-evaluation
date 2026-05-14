@@ -16,22 +16,25 @@ from typing import List
 from src.enigines.randomness import RandomnessEngine
 from src.enigines.verification import VerificationEngine
 from src.logger.base_logger import BaseLogger
+from src.utils.output_to_outcome_mapping import rejection_sampling
 from src.utils.types import RollRecord, VerificationResult
 
 
 class DrandMechanism(RandomnessEngine, VerificationEngine):
 
     # ========================= MECHANISM SPECIFIC =========================
-    
+
     def __init__(self) -> None:
-        self._CHAIN_HASH = "52db9ba70e0cc0f6eaf7803dd07447a1f5477735fd3f661792ba94600c84e971"
+        self._CHAIN_HASH = (
+            "52db9ba70e0cc0f6eaf7803dd07447a1f5477735fd3f661792ba94600c84e971"
+        )
         self._ENDPOINTS = [
             "https://drand.cloudflare.com",
             "https://api.drand.sh",
         ]
         self.MECHANISM_ID = "drand-quicknet"
         self._logger = BaseLogger(__name__)
-    
+
     def _get_request(self, path: str) -> dict:
         """
         Helper to make GET requests to the drand API with endpoint failover.
@@ -50,10 +53,11 @@ class DrandMechanism(RandomnessEngine, VerificationEngine):
             except requests.RequestException as exc:
                 # Network-level failure (timeout, connection refused, etc.)
                 # worth trying the next endpoint.
-                self._logger.warning(f"Endpoint {endpoint} failed: {exc}, trying next...")
+                self._logger.warning(
+                    f"Endpoint {endpoint} failed: {exc}, trying next..."
+                )
 
         raise ConnectionError(f"All drand endpoints failed for path: {path}")
-
 
     def fetch_chain_info(self) -> dict:
         """
@@ -61,7 +65,6 @@ class DrandMechanism(RandomnessEngine, VerificationEngine):
         key, and beacon period in seconds.
         """
         return self._get_request("/info")
-
 
     def fetch_latest_beacon(self) -> dict:
         """
@@ -75,7 +78,6 @@ class DrandMechanism(RandomnessEngine, VerificationEngine):
         """
         return self._get_request("/public/latest")
 
-
     def fetch_beacon_by_round(self, round_number: int) -> dict:
         """
         Returns the beacon for a specific round number. Since drand beacons are
@@ -88,7 +90,7 @@ class DrandMechanism(RandomnessEngine, VerificationEngine):
     def generate_rolls(self, quantity: int, output_file: str) -> List[RollRecord]:
         # Fetch chain info once per session. The chain hash acts as the server_seed
         # for the entire session — it is the public identifier of the randomness
-        # source and does not change between rolls.        
+        # source and does not change between rolls.
         self._logger.info("Fetching drand chain info...")
         chain_info = self.fetch_chain_info()
 
@@ -110,14 +112,17 @@ class DrandMechanism(RandomnessEngine, VerificationEngine):
 
         # ======================== Roll generation ========================
 
+        rolls: List[RollRecord] = []
         records = []
 
-        for i in range(args.count):
+        for i in range(quantity):
             # Each roll uses the next sequential round number.
             # Sequential rounds ensure each roll has a unique, ordered nonce.
             target_round = start_round + i
 
-            _logger.info(f"Roll {i + 1}/{args.count} — fetching round {target_round}...")
+            self._logger.debug(
+                f"Roll {i + 1}/{quantity} — fetching round {target_round}..."
+            )
 
             # If the target round is in the future, wait for it to be published.
             # drand publishes a new beacon every `period_seconds` seconds.
@@ -125,12 +130,12 @@ class DrandMechanism(RandomnessEngine, VerificationEngine):
             beacon = None
             while beacon is None:
                 try:
-                    beacon = fetch_beacon_by_round(target_round)
+                    beacon = self.fetch_beacon_by_round(target_round)
                 except requests.HTTPError as exc:
                     if exc.response.status_code in (404, 425):
                         # Round not published yet (404 = not found, 425 = too early).
                         # Wait one period and retry.
-                        _logger.debug(
+                        self._logger.debug(
                             f"Round {target_round} not yet available, "
                             f"waiting {period_seconds}s..."
                         )
@@ -142,11 +147,7 @@ class DrandMechanism(RandomnessEngine, VerificationEngine):
             raw_output = bytes.fromhex(beacon["randomness"])
 
             # Derive the dice outcome from the raw bytes.
-            outcome = rejection_sampling(
-                raw_output=raw_output,
-                rejection_threshold=REJECTION_THRESHOLD,
-                max_value=MAX_VALUE,
-            )
+            outcome = rejection_sampling(raw_output=raw_output)
 
             records.append(
                 {
@@ -161,27 +162,116 @@ class DrandMechanism(RandomnessEngine, VerificationEngine):
                     # raw_output stored as hex so it survives serialisation round-trips.
                     "raw_output": raw_output.hex(),
                     "outcome": outcome,
-                    "timestamp": datetime.now(timezone.utc).strftime(DATE_FORMAT),
-                    "mechanism_id": MECHANISM_ID,
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "mechanism_id": self.MECHANISM_ID,
                 }
             )
+            
+            rolls.append(
+                RollRecord(
+                    server_seed=server_seed,
+                    client_seed="",
+                    nonce=target_round,
+                    raw_output=raw_output,
+                    outcome=outcome,
+                    timestamp=datetime.now(timezone.utc),
+                    mechanism_id=self.MECHANISM_ID,
+                )
+            )
 
-            _logger.info(f"Round {target_round} -> outcome={outcome}")
-
-        # ========================== Write output ==========================
+            self._logger.debug(f"Round {target_round} -> outcome={outcome}")
 
         df = pd.DataFrame(records)
 
         # Ensure the output directory exists before writing.
-        os.makedirs(os.path.dirname(args.output), exist_ok=True)
-        df.to_csv(args.output, index=False)
+        os.makedirs(os.path.dirname(output_file), exist_ok=True)
+        df.to_csv(output_file, index=False)
 
-        _logger.info(f"Done. {len(df)} rolls written to {args.output}")
-        _logger.info(f"\n{df.head()}")
+        self._logger.info(f"Done. {len(df)} rolls written to {output_file}")
+
+        return rolls
 
     # ======================= VERIFICATION OPERATIONS =======================
 
     def verify(
         self, record: RollRecord, disclosed_server_seed: str = ""
     ) -> VerificationResult:
-        raise NotImplementedError()
+        recomputed_outcome = -1
+        is_match = False
+
+        try:
+            # record.nonce holds the round number written during generate_roll.
+            # Fetching by round number gives us the exact beacon that was used.
+            beacon = self._get_request(f"/public/{record.nonce}")
+
+            check_1 = self._check_randomness_matches(beacon, record)
+            check_2 = self._check_chain_integrity(beacon, record)
+
+            if check_1 and check_2:
+                # Recompute the outcome from the stored raw bytes and compare.
+                recomputed_outcome = rejection_sampling(raw_output=record.raw_output)
+                is_match = recomputed_outcome == record.outcome
+
+        except Exception as exc:
+            self._logger.error(f"Verification failed for round={record.nonce}: {exc}")
+
+        return VerificationResult(
+            record=record,
+            disclosed_server_seed=self._CHAIN_HASH,
+            recomputed_outcome=recomputed_outcome,
+            match=is_match,
+        )
+
+    def _check_randomness_matches(self, beacon: dict, record: RollRecord) -> bool:
+        # Decode the on-chain randomness for this round and compare it to what
+        # was stored in the record during generation. drand beacons are
+        # deterministic and permanent — the same round always returns the same
+        # randomness. Any mismatch means the record was tampered with.
+        on_chain_randomness = bytes.fromhex(beacon["randomness"])
+        result = on_chain_randomness == record.raw_output
+
+        if not result:
+            self._logger.warning(
+                f"Check 1 failed: on-chain randomness does not match "
+                f"recorded raw_output for round={record.nonce}"
+            )
+        return result
+
+    def _check_chain_integrity(self, beacon: dict, record: RollRecord) -> bool:
+        """
+        Each beacon is chained to the one before it. The current beacon
+        contains a signature field. The previous beacon's signature should
+        match the current beacon's previous_signature field.
+        
+        We fetch round N-1 and confirm:
+        - beacon[N]["previous_signature"] == beacon[N-1]["signature"]
+        
+        This proves the beacon at round N was produced as part of the
+        legitimate chain and not inserted out of nowhere.
+        """
+        
+        if record.nonce <= 1:
+            # Round 1 has no previous beacon to check against.
+            self._logger.debug("Chain integrity check skipped for round 1.")
+            return True
+
+        prior_beacon = self._get_request(f"/public/{record.nonce - 1}")
+
+        current_prev_sig = beacon.get("previous_signature", "")
+        prior_sig = prior_beacon.get("signature", "")
+
+        if not current_prev_sig or not prior_sig:
+            self._logger.debug(
+                f"Chain integrity check skipped for round={record.nonce}: "
+                "unchained mode detected (no previous_signature field)."
+            )
+            return True
+
+        result = current_prev_sig == prior_sig
+
+        if not result:
+            self._logger.warning(
+                f"Check 2 failed: chain integrity broken at round={record.nonce}. "
+                f"previous_signature does not match prior round signature."
+            )
+        return result
