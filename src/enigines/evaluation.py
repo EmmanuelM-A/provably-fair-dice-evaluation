@@ -11,6 +11,7 @@ from src.enigines.config import EvaluationConfig
 from src.enigines.pfd import ProvablyFairDiceMechanism
 from src.logger.base_logger import BaseLogger
 from src.modules.randomness.randomness_tests import RandomnessEvaluationResult, RandomnessTests
+from src.modules.security.security_tests import SecurityEvaluationResult, SecurityTests
 from src.utils.types import RollRecord
 
 
@@ -43,14 +44,17 @@ class EvaluationEngine:
         self.config = config
         self._logger = BaseLogger(__name__)
         self._randomness_result: Optional[RandomnessEvaluationResult] = None
+        self._security_result: Optional[SecurityEvaluationResult] = None
 
     def evaluate_randomness(self, rolls: List[RollRecord]) -> RandomnessEvaluationResult:
         result = RandomnessTests(self.config).run(rolls)
         self._randomness_result = result
         return result
 
-    def evaluate_security(self) -> None:
-        pass
+    def evaluate_security(self, rolls: List[RollRecord]) -> SecurityEvaluationResult:
+        result = SecurityTests(self.config).run(rolls)
+        self._security_result = result
+        return result
 
     def evaluate_performance(self) -> None:
         pass
@@ -67,7 +71,7 @@ class EvaluationEngine:
             "mechanism":   "<mechanism_id>",
             "saved_at":    "%Y-%m-%d %H:%M:%S",
             "randomness":  { ... } | null,
-            "security":    null,
+            "security":    { ... } | null,
             "performance": null,
             "transparency": null
         }
@@ -80,7 +84,11 @@ class EvaluationEngine:
                 if self._randomness_result is not None
                 else None
             ),
-            "security": None,
+            "security": (
+                dataclasses.asdict(self._security_result)
+                if self._security_result is not None
+                else None
+            ),
             "performance": None,
             "transparency": None,
         }

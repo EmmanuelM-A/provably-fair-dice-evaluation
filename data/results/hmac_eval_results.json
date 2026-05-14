@@ -1,14 +1,14 @@
 {
   "mechanism": "HMAC-SHA256 Mechanism",
-  "saved_at": "2026-05-14 05:23:00",
+  "saved_at": "2026-05-14 06:15:18",
   "randomness": {
     "n_rolls": 1000,
     "n_bits": 256000,
     "sanity_check": {
       "passed": true,
-      "chi_square_stat": 2004.1963999999998,
+      "chi_square_stat": 2048.3372,
       "p_value": 0.0,
-      "message": "Sanity check passed: biased die correctly rejected (chi2=2004.20, p=0.0000e+00)."
+      "message": "Sanity check passed: biased die correctly rejected (chi2=2048.34, p=0.0000e+00)."
     },
     "distribution": {
       "chi_square": {
@@ -262,7 +262,45 @@
       "nist_light_all_passed": false
     }
   },
-  "security": null,
+  "security": {
+    "n_rolls": 1000,
+    "seed_reuse": {
+      "test_name": "seed_reuse",
+      "passed": false,
+      "message": "1 server seed(s) reused; 1 client seed(s) reused.",
+      "details": {
+        "n_records": 1000,
+        "n_reused_server_seeds": 1,
+        "n_reused_client_seeds": 1
+      }
+    },
+    "nonce_presence": {
+      "test_name": "nonce_presence",
+      "passed": true,
+      "message": "All 1000 records have a non-zero nonce.",
+      "details": {
+        "n_records": 1000,
+        "n_missing": 0
+      }
+    },
+    "nonce_uniqueness": {
+      "test_name": "nonce_uniqueness",
+      "passed": true,
+      "message": "All 1000 nonce values are unique.",
+      "details": {
+        "n_records": 1000,
+        "n_duplicate_nonces": 0,
+        "n_duplicate_rolls": 0
+      }
+    },
+    "nonce_min_entropy": 9.965784284662087,
+    "summary": {
+      "seed_reuse": false,
+      "nonce_presence": true,
+      "nonce_uniqueness": true,
+      "nonce_min_entropy_bits": 9.9658
+    }
+  },
   "performance": null,
   "transparency": null
 }

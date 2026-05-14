@@ -31,6 +31,7 @@ def main():
 
     mechanism_eval = EvaluationEngine(mechanism=mechanism, config=HMAC_CONFIG)
     mechanism_eval.evaluate_randomness(rolls)
+    mechanism_eval.evaluate_security(rolls)
     mechanism_eval.save_results(HMAC_RESULTS)
 
 
