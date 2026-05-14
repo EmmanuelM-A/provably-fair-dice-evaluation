@@ -10,22 +10,15 @@ NIST SP 800-22 Rev. 1a.
 """
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
 from typing import Any, Dict
 import math
 import numpy as np
 from scipy import special, stats
 
+from src.modules.data import TestResult
+
 
 SIGNIFICANCE_LEVEL = 0.01
-
-
-@dataclass
-class TestResult:
-    test_name: str
-    p_value: float
-    passed: bool
-    parameters_used: Dict[str, Any] = field(default_factory=dict)
 
 
 class NistTests(ABC):
