@@ -7,14 +7,13 @@ from typing import List
 
 import pandas as pd
 
-from src.enigines.randomness import RandomnessEngine
-from src.enigines.verification import VerificationEngine
+from src.enigines.pfd import ProvablyFairDiceMechanism
 from src.logger.base_logger import BaseLogger
 from src.utils.output_to_outcome_mapping import rejection_sampling
 from src.utils.types import RollRecord, VerificationResult
 
 
-class HMACMechanism(RandomnessEngine, VerificationEngine):
+class HMACMechanism(ProvablyFairDiceMechanism):
     """
     The concrete implementation of a traditional provably fair dice mechanism
     using HMAC (off-chain approach).
@@ -22,13 +21,14 @@ class HMACMechanism(RandomnessEngine, VerificationEngine):
 
     # ========================= MECHANISM SPECIFIC =========================
 
-    def __init__(self) -> None:
+    def __init__(self, output_file: str) -> None:
         self._client_seed = "example-client-seed-12345"
         self.MECHANISM_ID = "hmac-sha256"
+        self._output_file = output_file
         self._logger = BaseLogger(__name__)
 
     @staticmethod
-    def generate_server_seed() -> str:
+    def _generate_server_seed() -> str:
         """
         Generates a random server seed using the OS's cryptographically
         secure random number generator.
@@ -36,21 +36,21 @@ class HMACMechanism(RandomnessEngine, VerificationEngine):
         return os.urandom(32).hex()
 
     @staticmethod
-    def commit(server_seed: str) -> str:
+    def _commit(server_seed: str) -> str:
         """
         Produces a server seed commitment which is published before the game
         round starts.
         """
         return hashlib.sha256(server_seed.encode()).hexdigest()
 
-    def verify_commitment(self, server_seed: str, published_commitment: str) -> bool:
+    def _verify_commitment(self, server_seed: str, published_commitment: str) -> bool:
         """
         Verifies that the disclosed server seed matches the published commitment.
         """
-        recomputed_commitment = self.commit(server_seed)
+        recomputed_commitment = self._commit(server_seed)
         return self.safe_compare(recomputed_commitment, published_commitment)
 
-    def generate_raw_output(
+    def _generate_raw_output(
         self, server_seed: str, client_seed: str, nonce: int
     ) -> bytes:
         """
@@ -66,13 +66,13 @@ class HMACMechanism(RandomnessEngine, VerificationEngine):
 
     # ======================== RANDOMNESS OPERATIONS ========================
 
-    def generate_rolls(self, quantity: int, output_file: str) -> List[RollRecord]:
+    def generate_rolls(self, quantity: int) -> List[RollRecord]:
         rolls: List[RollRecord] = []
         records = []
 
-        server_seed = self.generate_server_seed()
+        server_seed = self._generate_server_seed()
 
-        commitment = self.commit(server_seed)
+        commitment = self._commit(server_seed)
         self._logger.info(f"Commitment (SHA-256 of server seed): {commitment}")
         self._logger.info(f"Client seed: {self._client_seed}")
 
@@ -81,7 +81,7 @@ class HMACMechanism(RandomnessEngine, VerificationEngine):
 
             self._logger.info(f"Roll {nonce}/{quantity}...")
 
-            raw_output = self.generate_raw_output(self._client_seed, server_seed, nonce)
+            raw_output = self._generate_raw_output(self._client_seed, server_seed, nonce)
 
             # Map the raw bytes to a dice outcome using rejection sampling.
             outcome = rejection_sampling(raw_output=raw_output)
@@ -117,10 +117,10 @@ class HMACMechanism(RandomnessEngine, VerificationEngine):
 
         df = pd.DataFrame(records)
 
-        os.makedirs(os.path.dirname(output_file), exist_ok=True)
-        df.to_csv(output_file, index=False)
+        os.makedirs(os.path.dirname(self._output_file), exist_ok=True)
+        df.to_csv(self._output_file, index=False)
 
-        self._logger.info(f"Done. {len(df)} rolls written to {output_file}")
+        self._logger.info(f"Done. {len(df)} rolls written to {self._output_file}")
 
         return rolls
 
@@ -134,7 +134,7 @@ class HMACMechanism(RandomnessEngine, VerificationEngine):
         confirm it matches the recorded outcome. Replicating what a user
         would do post-game/match/session to verify fairness.
         """        
-        recomputed_output = self.generate_raw_output(
+        recomputed_output = self._generate_raw_output(
             server_seed=disclosed_server_seed,
             client_seed=record.client_seed,
             nonce=record.nonce

@@ -3,7 +3,6 @@ Generates N roll records using drand beacon randomness and writes them to
 a specified csv file.
 """
 
-import argparse
 import os
 import time
 from datetime import datetime, timezone
@@ -13,18 +12,17 @@ import requests
 
 from typing import List
 
-from src.enigines.randomness import RandomnessEngine
-from src.enigines.verification import VerificationEngine
+from src.enigines.pfd import ProvablyFairDiceMechanism
 from src.logger.base_logger import BaseLogger
 from src.utils.output_to_outcome_mapping import rejection_sampling
 from src.utils.types import RollRecord, VerificationResult
 
 
-class DrandMechanism(RandomnessEngine, VerificationEngine):
+class DrandMechanism(ProvablyFairDiceMechanism):
 
     # ========================= MECHANISM SPECIFIC =========================
 
-    def __init__(self) -> None:
+    def __init__(self, output_file: str) -> None:
         self._CHAIN_HASH = (
             "52db9ba70e0cc0f6eaf7803dd07447a1f5477735fd3f661792ba94600c84e971"
         )
@@ -32,6 +30,7 @@ class DrandMechanism(RandomnessEngine, VerificationEngine):
             "https://drand.cloudflare.com",
             "https://api.drand.sh",
         ]
+        self._output_file = output_file
         self.MECHANISM_ID = "drand-quicknet"
         self._logger = BaseLogger(__name__)
 
@@ -59,14 +58,14 @@ class DrandMechanism(RandomnessEngine, VerificationEngine):
 
         raise ConnectionError(f"All drand endpoints failed for path: {path}")
 
-    def fetch_chain_info(self) -> dict:
+    def _fetch_chain_info(self) -> dict:
         """
         Retrieves metadata about the drand chain including the chain hash, public
         key, and beacon period in seconds.
         """
         return self._get_request("/info")
 
-    def fetch_latest_beacon(self) -> dict:
+    def _fetch_latest_beacon(self) -> dict:
         """
         Retrieves the most recently published beacon from the drand chain. In this
         format:
@@ -78,7 +77,7 @@ class DrandMechanism(RandomnessEngine, VerificationEngine):
         """
         return self._get_request("/public/latest")
 
-    def fetch_beacon_by_round(self, round_number: int) -> dict:
+    def _fetch_beacon_by_round(self, round_number: int) -> dict:
         """
         Returns the beacon for a specific round number. Since drand beacons are
         permanent the same round always returns the same output.
@@ -87,12 +86,12 @@ class DrandMechanism(RandomnessEngine, VerificationEngine):
 
     # ======================== RANDOMNESS OPERATIONS ========================
 
-    def generate_rolls(self, quantity: int, output_file: str) -> List[RollRecord]:
+    def generate_rolls(self, quantity: int) -> List[RollRecord]:
         # Fetch chain info once per session. The chain hash acts as the server_seed
         # for the entire session — it is the public identifier of the randomness
         # source and does not change between rolls.
         self._logger.info("Fetching drand chain info...")
-        chain_info = self.fetch_chain_info()
+        chain_info = self._fetch_chain_info()
 
         # server_seed is set once per session, not per roll.
         # This reflects how drand works: the chain hash is fixed and public.
@@ -106,7 +105,7 @@ class DrandMechanism(RandomnessEngine, VerificationEngine):
         # Fetch the latest beacon to find the current round number.
         # All subsequent rolls use rounds starting from here.
         self._logger.info("Fetching latest beacon to determine starting round...")
-        latest_beacon = self.fetch_latest_beacon()
+        latest_beacon = self._fetch_latest_beacon()
         start_round = latest_beacon["round"]
         self._logger.info(f"Starting from round {start_round}")
 
@@ -130,7 +129,7 @@ class DrandMechanism(RandomnessEngine, VerificationEngine):
             beacon = None
             while beacon is None:
                 try:
-                    beacon = self.fetch_beacon_by_round(target_round)
+                    beacon = self._fetch_beacon_by_round(target_round)
                 except requests.HTTPError as exc:
                     if exc.response.status_code in (404, 425):
                         # Round not published yet (404 = not found, 425 = too early).
@@ -184,10 +183,10 @@ class DrandMechanism(RandomnessEngine, VerificationEngine):
         df = pd.DataFrame(records)
 
         # Ensure the output directory exists before writing.
-        os.makedirs(os.path.dirname(output_file), exist_ok=True)
-        df.to_csv(output_file, index=False)
+        os.makedirs(os.path.dirname(self._output_file), exist_ok=True)
+        df.to_csv(self._output_file, index=False)
 
-        self._logger.info(f"Done. {len(df)} rolls written to {output_file}")
+        self._logger.info(f"Done. {len(df)} rolls written to {self._output_file}")
 
         return rolls
 

@@ -83,9 +83,10 @@ class ChainlinkVRFMechanism(ProvablyFairDiceMechanism):
 
     # ========================= MECHANISM SPECIFIC =========================
 
-    def __init__(self) -> None:
+    def __init__(self, output_file: str) -> None:
         self.MECHANISM_ID = "chainlink-vrf-v2.5"
         self._logger = BaseLogger(__name__)
+        self._output_file = output_file
 
         rpc_url = os.environ["VRF_RPC_URL"]
         self._consumer_address = os.environ["VRF_CONSUMER_ADDRESS"]
@@ -156,7 +157,7 @@ class ChainlinkVRFMechanism(ProvablyFairDiceMechanism):
             "Check your subscription balance at vrf.chain.link."
         )
 
-    def generate_rolls(self, quantity: int, output_file: str) -> List[RollRecord]:
+    def generate_rolls(self, quantity: int) -> List[RollRecord]:
         self._logger.info(f"Coordinator (server_seed): {self._coordinator_address}")
         self._logger.info(f"Consumer (client_seed): {self._consumer_address}")
 
@@ -201,10 +202,10 @@ class ChainlinkVRFMechanism(ProvablyFairDiceMechanism):
             self._logger.info(f"requestId={request_id} -> outcome={outcome}")
 
         df = pd.DataFrame(records)
-        os.makedirs(os.path.dirname(output_file), exist_ok=True)
-        df.to_csv(output_file, index=False)
+        os.makedirs(os.path.dirname(self._output_file), exist_ok=True)
+        df.to_csv(self._output_file, index=False)
 
-        self._logger.info(f"Done. {len(df)} rolls written to {output_file}")
+        self._logger.info(f"Done. {len(df)} rolls written to {self._output_file}")
 
         return rolls
 

@@ -2,6 +2,7 @@
 Configuration settings for the Provably Fair Dice Evaluation Framework.
 """
 
+import os
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
@@ -15,3 +16,7 @@ QUANTITY_OF_ROLLS: int = 10
 MAX_UINT32: int = 2**32
 MAX_VALUE: int = 10_000
 REJECTION_THRESHOLD: int = (MAX_UINT32 // MAX_VALUE) * MAX_VALUE
+
+# Lower-bound block for coordinator event log scans. Set this to the block at
+# which your VRF coordinator contract was deployed to avoid scanning from genesis.
+VRF_COORDINATOR_DEPLOY_BLOCK: int = int(os.environ.get("VRF_COORDINATOR_DEPLOY_BLOCK", 0))

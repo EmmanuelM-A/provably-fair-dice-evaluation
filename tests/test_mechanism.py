@@ -7,7 +7,7 @@ import pytest
 from datetime import datetime, timezone
 
 from src.provably_fair_mechanisms.hmac_mechanism import ProvablyFairDiceHMACMechanism
-from src.utils.provably_fair_mechanism import ProvablyFairDiceMechanism
+from src.enigines.pfd import ProvablyFairDiceMechanism
 from src.utils.types import RollRecord, VerificationResult
 
 # ====================== Test fixtures and shared data ======================
