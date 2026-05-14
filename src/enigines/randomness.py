@@ -5,6 +5,7 @@ implemented provably fair dice mechanism.
 """
 
 from abc import ABC, abstractmethod
+from typing import List
 
 from src.utils.types import RollRecord
 
@@ -16,32 +17,9 @@ class RandomnessEngine(ABC):
     """
 
     @abstractmethod
-    def get_entropy(self) -> bytes:
+    def generate_rolls(self) -> List[RollRecord]:
         """
-        Returns the entropy of the random number generator.
-        """
-        raise NotImplementedError()
-
-    @abstractmethod
-    def get_noise(self) -> bytes:
-        """
-        Returns the noise of the random number generator.
-        """
-        raise NotImplementedError()
-
-    @abstractmethod
-    def get_drbg_instance(self) -> any:  # NOTE: Come back to this!
-        """
-        Returns the random number generator used to generate random numbers.
-        """
-        raise NotImplementedError()
-
-    @abstractmethod
-    def generate_roll(
-        self, server_seed: str, client_seed: str, nonce: str = ""
-    ) -> RollRecord:
-        """
-        Generates a random roll number using the provided server seed, client
-        seed and nonce.
+        Generates a dataset of random rolls based your defined/simulated PFD
+        mechanism.
         """
         raise NotImplementedError()

@@ -21,7 +21,7 @@ class VerificationEngine(ABC):
     ) -> VerificationResult:
         """
         Simulates the verification process a user would undertake to verify if
-        the outcome of pfd is fair.
+        the outcome of provably fair dice roll.
         """
         raise NotImplementedError()
 
