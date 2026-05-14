@@ -1,16 +1,22 @@
-
 import argparse
-from typing import List
 
-from src.enigines.evaluation import EvaluationEngine
-from src.provably_fair_mechanisms.chainlink_vrf import ChainlinkVRFMechanism
-from src.provably_fair_mechanisms.drand_mechanism import DrandMechanism
+from src.config.configs import MAX_VALUE
+from src.enigines.evaluation import EvaluationConfig, EvaluationEngine
 from src.provably_fair_mechanisms.hmac_mechanism import HMACMechanism
+from src.utils.data_loader import load_roll_records_from
+
+HMAC_OUTPUT = "data/rolls/hmac_rolls.csv"
+
+# Config for the HMAC mechanism: outcomes are in [1, MAX_VALUE].
+# Chi-square requires at least 5 * n_faces rolls, so with MAX_VALUE=10000
+# you need >=50,000 rolls. Lower n_faces (e.g. 6) for a 6-sided die interpretation.
+HMAC_CONFIG = EvaluationConfig(
+    n_faces=MAX_VALUE,
+    distribution_min_rolls=500,
+)
 
 
 def main():
-    # ============================ ARGUMENTS ============================
-
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--count",
@@ -19,29 +25,18 @@ def main():
         help="Number of rolls to generate.",
     )
     args = parser.parse_args()
-    
-    HAMC_OUTPUT = "data/rolls/hmac_rolls.csv"
-    DRAND_OUTPUT = "data/rolls/drand_rolls.csv"
-    CHAINLINK_OUTPUT = "data/rolls/chainlink_vrf_rolls.csv"
 
-    # ========================= Setup Mechanisms =========================
-    
-    hmac = HMACMechanism(output_file=HAMC_OUTPUT)
-    drand = DrandMechanism(output_file=DRAND_OUTPUT)
-    
-    # Note: High quanities may take a while due to very slow fulliment rates.
-    chainlink_vrf = ChainlinkVRFMechanism(output_file=CHAINLINK_OUTPUT)
-    
-    # ========================= Evaluation Engine =========================
-    
-    hmac_rolls = hmac.generate_rolls(args.count)
-    hmac_eval = EvaluationEngine(mechanism=hmac)
-    hmac_eval.evaluate_randomness(hmac_rolls)
+    mechanism = HMACMechanism(output_file=HMAC_OUTPUT)
+    # rolls = mechanism.generate_rolls(args.count)
+    rolls = load_roll_records_from(HMAC_OUTPUT)
 
+    mechanism_eval = EvaluationEngine(mechanism=mechanism, config=HMAC_CONFIG)
+    result = mechanism_eval.evaluate_randomness(rolls)
+    print(result.summary)
 
 
 if __name__ == "__main__":
     """
-    Usage python -m src.main --count <number_of_rolls_to_generate_per_mechanism>
+    Usage: python -m src.main --count <number_of_rolls>
     """
     main()

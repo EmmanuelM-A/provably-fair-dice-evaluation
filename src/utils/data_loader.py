@@ -25,7 +25,7 @@ _REQUIRED_COLUMNS = [
 ]
 
 
-def load_rng_data_records_from(file: str | Path) -> List[RollRecord]:
+def load_roll_records_from(file: str | Path) -> List[RollRecord]:
     """
     Loads all the random values (rolls, numbers, etc.) from the
     provided CSV file, validates the required fields, and returns a list of

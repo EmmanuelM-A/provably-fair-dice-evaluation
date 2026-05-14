@@ -13,7 +13,7 @@ LOG_FORMAT: str = "%(asctime)s [%(levelname)s] [%(name)s]: %(message)s"
 DATE_FORMAT: str = "%Y-%m-%d %H:%M:%S"
 
 MAX_UINT32: int = 2**32
-MAX_VALUE: int = 10_000
+MAX_VALUE: int = 100
 REJECTION_THRESHOLD: int = (MAX_UINT32 // MAX_VALUE) * MAX_VALUE
 
 # Lower-bound block for coordinator event log scans. Set this to the block at

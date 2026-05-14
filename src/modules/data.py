@@ -8,3 +8,7 @@ class TestResult:
     p_value: float
     passed: bool
     parameters_used: Dict[str, Any] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        # scipy comparisons return np.bool_ — normalise to plain Python bool.
+        self.passed = bool(self.passed)
