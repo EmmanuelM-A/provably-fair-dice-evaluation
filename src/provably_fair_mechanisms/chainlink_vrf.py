@@ -106,6 +106,9 @@ class ChainlinkVRFMechanism(ProvablyFairDiceMechanism):
             address=Web3.to_checksum_address(self._coordinator_address),
             abi=COORDINATOR_ABI,
         )
+    
+    def __str__(self) -> str:
+        return "Chainlink VRF v2.5 Mechanism"
 
     # ======================== RANDOMNESS OPERATIONS ========================
 

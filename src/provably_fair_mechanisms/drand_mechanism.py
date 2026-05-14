@@ -33,6 +33,9 @@ class DrandMechanism(ProvablyFairDiceMechanism):
         self._output_file = output_file
         self.MECHANISM_ID = "drand-quicknet"
         self._logger = BaseLogger(__name__)
+    
+    def __str__(self) -> str:
+        return "Drand Quicknet Mechanism"
 
     def _get_request(self, path: str) -> dict:
         """

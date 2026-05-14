@@ -28,18 +28,21 @@ def main():
     
     mechanisms: List[ProvablyFairDiceMechanism] = []
     
-    mechanisms.append(HMACMechanism())
-    mechanisms.append(DrandMechanism())
+    mechanisms.append(HMACMechanism(output_file=HAMC_OUTPUT))
+    mechanisms.append(DrandMechanism(output_file=DRAND_OUTPUT))
     
-    # Note: High quanity may take a while due to API rate limits.
-    mechanisms.append(ChainlinkVRFMechanism())
+    # Note: High quanities may take a while due to fulliment rates.
+    mechanisms.append(ChainlinkVRFMechanism(output_file=CHAINLINK_OUTPUT))
     
     # ========================= Evaluation Engine =========================
     
     for mech in mechanisms:
-        rolls = mech.generate_rolls(args.count, HAMC_OUTPUT)
+        rolls = mech.generate_rolls(args.count)
+        print(f"{mech.__str__} generated {len(rolls)} rolls.")
 
-    
 
 if __name__ == "__main__":
+    """
+    Usage python -m src.main --count <number_of_rolls_to_generate_per_mechanism>
+    """
     main()

@@ -26,6 +26,9 @@ class HMACMechanism(ProvablyFairDiceMechanism):
         self.MECHANISM_ID = "hmac-sha256"
         self._output_file = output_file
         self._logger = BaseLogger(__name__)
+    
+    def __str__(self) -> str:
+        return "HMAC-SHA256 Mechanism"
 
     @staticmethod
     def _generate_server_seed() -> str:
