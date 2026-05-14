@@ -17,7 +17,7 @@ class RandomnessEngine(ABC):
     """
 
     @abstractmethod
-    def generate_rolls(self) -> List[RollRecord]:
+    def generate_rolls(self, quantity: int, output_file: str) -> List[RollRecord]:
         """
         Generates a dataset of random rolls based your defined/simulated PFD
         mechanism.

@@ -17,7 +17,7 @@ class VerificationEngine(ABC):
 
     @abstractmethod
     def verify(
-        self, record: RollRecord, disclosed_server_seed: str
+        self, record: RollRecord, disclosed_server_seed: str = ""
     ) -> VerificationResult:
         """
         Simulates the verification process a user would undertake to verify if

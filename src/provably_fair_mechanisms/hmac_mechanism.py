@@ -3,15 +3,18 @@ import hmac
 
 import os
 from datetime import datetime, timezone
+from typing import List
 
-from src.config.configs import MAX_VALUE, REJECTION_THRESHOLD
+import pandas as pd
+
 from src.enigines.randomness import RandomnessEngine
 from src.enigines.verification import VerificationEngine
+from src.logger.base_logger import BaseLogger
 from src.utils.output_to_outcome_mapping import rejection_sampling
 from src.utils.types import RollRecord, VerificationResult
 
 
-class ProvablyFairDiceHMACMechanism(RandomnessEngine, VerificationEngine):
+class HMACMechanism(RandomnessEngine, VerificationEngine):
     """
     The concrete implementation of a traditional provably fair dice mechanism
     using HMAC (off-chain approach).
@@ -20,14 +23,17 @@ class ProvablyFairDiceHMACMechanism(RandomnessEngine, VerificationEngine):
     # ========================= MECHANISM SPECIFIC =========================
 
     def __init__(self) -> None:
-        self._MAX_UNIT32 = 2**32
-        self._MAX_VALUE = 10_000  # [0, MAX_VALUE] -> MAX_VALUE possible outcomes
-        self._REJECTION_THRESHOLD = (
-            self._MAX_UNIT32 // self._MAX_VALUE
-        ) * self._MAX_VALUE
-        self._BYTES_PER_CHUNK = 4
-        self._CHUNKS_PER_DIGEST = 32 // self._BYTES_PER_CHUNK
+        self._client_seed = "example-client-seed-12345"
         self.MECHANISM_ID = "hmac-sha256"
+        self._logger = BaseLogger(__name__)
+
+    @staticmethod
+    def generate_server_seed() -> str:
+        """
+        Generates a random server seed using the OS's cryptographically
+        secure random number generator.
+        """
+        return os.urandom(32).hex()
 
     @staticmethod
     def commit(server_seed: str) -> str:
@@ -44,91 +50,97 @@ class ProvablyFairDiceHMACMechanism(RandomnessEngine, VerificationEngine):
         recomputed_commitment = self.commit(server_seed)
         return self.safe_compare(recomputed_commitment, published_commitment)
 
-    # ======================== RANDOMNESS OPERATIONS ========================
-
-    def get_entropy(self) -> bytes:
+    def generate_raw_output(
+        self, server_seed: str, client_seed: str, nonce: int
+    ) -> bytes:
         """
-        os.urandom() returns a random byte string of the specified length
-        suitable for use in HMAC. It draws it from /dev/urandom on Linux/macOS
-        and CryptGenRandom on Windows, which are both designed to be
-        cryptographically secure.
+        HMAC-SHA256(key=server_seed, msg=f"{client_seed}:{nonce}") produces
+        32 bytes of pseudorandom data.
         """
-        return os.urandom(32)
-
-    def get_noise(self) -> bytes:
-        """
-        Not applicable for the HMAC commit-reveal mechanism.
-
-        The HMAC construction derives all randomness from the server seed,
-        client seed, and nonce. No additional noise input is used.
-        """
-        return b""
-
-    def get_drbg_instance(self) -> None:
-        """
-        Not applicable for the HMAC commit-reveal mechanism.
-
-        HMAC-SHA256 is used directly as the randomness function. There is
-        no separate DRBG instance to configure or manage.
-        """
-        return None
-
-    def generate_roll(
-        self, server_seed: str, client_seed: str, nonce: str = ""
-    ) -> RollRecord:
-        """
-        Generates a single provably fair dice outcome.
-
-        Process:
-        - Compute ``HMAC-SHA256(...)`` to produce 32 bytes of pseudorandom data.
-        HMAC is used instead of plain SHA-256 to prevent length-extension
-        attacks (NIST FIPS 198-1).
-        - Iterate over the digest in 4-byte chunks, applying rejection sampling
-        to eliminate modulo bias, to produce the outcome.
-        """
-
-        # The same message format used by platforms like Stake, Primedice and
-        # Bustabit
         message = f"{client_seed}:{nonce}".encode()
-
-        raw_output = hmac.new(
-            server_seed.encode(), message, digestmod=hashlib.sha256
+        return hmac.new(
+            server_seed.encode(),
+            message,
+            digestmod=hashlib.sha256,
         ).digest()
 
-        outcome = rejection_sampling(
-            raw_output=raw_output,
-            rejection_threshold=REJECTION_THRESHOLD,
-            max_value=MAX_VALUE,
-        )
+    # ======================== RANDOMNESS OPERATIONS ========================
 
-        return RollRecord(
-            server_seed=server_seed,
-            client_seed=client_seed,
-            nonce=nonce,
-            raw_output=raw_output,
-            outcome=outcome,
-            timestamp=datetime.now(timezone.utc),
-            mechanism_id=self.MECHANISM_ID,
-        )
+    def generate_rolls(self, quantity: int, output_file: str) -> List[RollRecord]:
+        rolls: List[RollRecord] = []
+        records = []
+
+        server_seed = self.generate_server_seed()
+
+        commitment = self.commit(server_seed)
+        self._logger.info(f"Commitment (SHA-256 of server seed): {commitment}")
+        self._logger.info(f"Client seed: {self._client_seed}")
+
+        for i in range(quantity):
+            nonce = i + 1
+
+            self._logger.info(f"Roll {nonce}/{quantity}...")
+
+            raw_output = self.generate_raw_output(self._client_seed, server_seed, nonce)
+
+            # Map the raw bytes to a dice outcome using rejection sampling.
+            outcome = rejection_sampling(raw_output=raw_output)
+
+            records.append(
+                {
+                    # The server seed is stored in plaintext here because this is
+                    # a post-session record. In a real system it would only be
+                    # revealed after the session ends and the commitment is verified.
+                    "server_seed": server_seed,
+                    "client_seed": self._client_seed,
+                    "nonce": nonce,
+                    "raw_output": raw_output.hex(),
+                    "outcome": outcome,
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "mechanism_id": self.MECHANISM_ID,
+                }
+            )
+
+            rolls.append(
+                RollRecord(
+                    server_seed=server_seed,
+                    client_seed=self._client_seed,
+                    nonce=nonce,
+                    raw_output=raw_output,
+                    outcome=outcome,
+                    timestamp=datetime.now(timezone.utc),
+                    mechanism_id=self.MECHANISM_ID,
+                )
+            )
+
+            self._logger.info(f"Nonce {nonce} -> outcome={outcome}")
+
+        df = pd.DataFrame(records)
+
+        os.makedirs(os.path.dirname(output_file), exist_ok=True)
+        df.to_csv(output_file, index=False)
+
+        self._logger.info(f"Done. {len(df)} rolls written to {output_file}")
+
+        return rolls
 
     # ======================= VERIFICATION OPERATIONS =======================
 
     def verify(
-        self, record: RollRecord, disclosed_server_seed: str
+        self, record: RollRecord, disclosed_server_seed: str = ""
     ) -> VerificationResult:
         """
         Independently recompute the outcome from a disclosed server seed and
         confirm it matches the recorded outcome. Replicating what a user
         would do post-game/match/session to verify fairness.
-        """
+        """        
+        recomputed_output = self.generate_raw_output(
+            server_seed=disclosed_server_seed,
+            client_seed=record.client_seed,
+            nonce=record.nonce
+        )
 
-        message = f"{record.client_seed}:{record.nonce}".encode()
-
-        recomputed_output = hmac.new(
-            disclosed_server_seed.encode(), message, digestmod=hashlib.sha256
-        ).digest()
-
-        recomputed_outcome = self._rejection_sampling(recomputed_output)
+        recomputed_outcome = rejection_sampling(recomputed_output)
 
         # Formatted both outcomes to zero-padded 4-digit strs to ensure the
         # same length regardless of outcome values

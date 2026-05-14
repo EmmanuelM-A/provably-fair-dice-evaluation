@@ -9,7 +9,7 @@ from datetime import datetime
 class RollRecord:
     server_seed: str
     client_seed: str
-    nonce: str
+    nonce: int
     raw_output: bytes
     outcome: int
     timestamp: datetime

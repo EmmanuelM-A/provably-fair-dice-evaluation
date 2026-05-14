@@ -1,7 +1,10 @@
+from src.config.configs import MAX_VALUE, REJECTION_THRESHOLD
+
+
 def rejection_sampling(
     raw_output: bytes,
-    rejection_threshold: int,
-    max_value: int
+    rejection_threshold: int = REJECTION_THRESHOLD,
+    max_value: int = MAX_VALUE,
 ) -> int:
     """
     Maps a 32-byte HMAC digest (raw_output) to an outcome in the range
