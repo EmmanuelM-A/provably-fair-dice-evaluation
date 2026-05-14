@@ -1,14 +1,14 @@
 {
   "mechanism": "HMAC-SHA256 Mechanism",
-  "saved_at": "2026-05-14 06:15:18",
+  "saved_at": "2026-05-14 06:56:37",
   "randomness": {
     "n_rolls": 1000,
     "n_bits": 256000,
     "sanity_check": {
       "passed": true,
-      "chi_square_stat": 2048.3372,
+      "chi_square_stat": 1957.9051999999997,
       "p_value": 0.0,
-      "message": "Sanity check passed: biased die correctly rejected (chi2=2048.34, p=0.0000e+00)."
+      "message": "Sanity check passed: biased die correctly rejected (chi2=1957.91, p=0.0000e+00)."
     },
     "distribution": {
       "chi_square": {
@@ -301,6 +301,73 @@
       "nonce_min_entropy_bits": 9.9658
     }
   },
-  "performance": null,
+  "performance": {
+    "latency": {
+      "test_name": "dice_generation_latency",
+      "n_requests": 1000,
+      "mean_ms": 3.513107800317812,
+      "median_ms": 3.463749999355059,
+      "p75_ms": 3.8374249925254844,
+      "p90_ms": 4.156020007212646,
+      "p99_ms": 4.927889993414283,
+      "min_ms": 2.176599999074824,
+      "max_ms": 12.826500009396113,
+      "std_ms": 0.6676701297791805
+    },
+    "startup_steady_state": {
+      "test_name": "startup_vs_steady_state",
+      "n_requests": 10000,
+      "cov_threshold": 0.02,
+      "startup_n": 10000,
+      "startup_mean_ms": 3.5330494200170506,
+      "startup_std_ms": 0.752323094827487,
+      "steady_state_n": 0,
+      "steady_state_mean_ms": 0.0,
+      "steady_state_std_ms": 0.0,
+      "steady_state_cov": 0.0,
+      "steady_state_declared_at": -1
+    },
+    "throughput_under_load": {
+      "10": {
+        "concurrency": 10,
+        "actual_workers": 10,
+        "n_requests": 200,
+        "requests_per_second": 813.1152233063029,
+        "mean_latency_ms": 11.466544499344309,
+        "p99_latency_ms": 16.50793199485633
+      },
+      "100": {
+        "concurrency": 100,
+        "actual_workers": 100,
+        "n_requests": 200,
+        "requests_per_second": 767.9211682564337,
+        "mean_latency_ms": 97.39119900143123,
+        "p99_latency_ms": 126.36505599846714
+      },
+      "1000": {
+        "concurrency": 1000,
+        "actual_workers": 200,
+        "n_requests": 200,
+        "requests_per_second": 735.5385760756477,
+        "mean_latency_ms": 138.83114600015688,
+        "p99_latency_ms": 191.70282000719453
+      },
+      "10000": {
+        "concurrency": 10000,
+        "actual_workers": 200,
+        "n_requests": 200,
+        "requests_per_second": 704.5041769994468,
+        "mean_latency_ms": 148.35404900040885,
+        "p99_latency_ms": 206.14708599241567
+      }
+    },
+    "summary": {
+      "mean_latency_ms": 3.5131,
+      "p99_latency_ms": 4.9279,
+      "steady_state_reached": false,
+      "steady_state_mean_ms": 0.0,
+      "peak_requests_per_second": 813.12
+    }
+  },
   "transparency": null
 }

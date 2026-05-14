@@ -10,6 +10,7 @@ from src.config.configs import DATE_FORMAT
 from src.enigines.config import EvaluationConfig
 from src.enigines.pfd import ProvablyFairDiceMechanism
 from src.logger.base_logger import BaseLogger
+from src.modules.performance.performance_tests import PerformanceEvaluationResult, PerformanceTests
 from src.modules.randomness.randomness_tests import RandomnessEvaluationResult, RandomnessTests
 from src.modules.security.security_tests import SecurityEvaluationResult, SecurityTests
 from src.utils.types import RollRecord
@@ -45,6 +46,7 @@ class EvaluationEngine:
         self._logger = BaseLogger(__name__)
         self._randomness_result: Optional[RandomnessEvaluationResult] = None
         self._security_result: Optional[SecurityEvaluationResult] = None
+        self._performance_result: Optional[PerformanceEvaluationResult] = None
 
     def evaluate_randomness(self, rolls: List[RollRecord]) -> RandomnessEvaluationResult:
         result = RandomnessTests(self.config).run(rolls)
@@ -56,8 +58,20 @@ class EvaluationEngine:
         self._security_result = result
         return result
 
-    def evaluate_performance(self) -> None:
-        pass
+    def evaluate_performance(
+        self,
+        n_latency_requests: int = 1_000,
+        n_startup_requests: int = 10_000,
+        n_load_requests: int = 200,
+    ) -> PerformanceEvaluationResult:
+        result = PerformanceTests(self.config).run(
+            mechanism=self.mechanism,
+            n_latency_requests=n_latency_requests,
+            n_startup_requests=n_startup_requests,
+            n_load_requests=n_load_requests,
+        )
+        self._performance_result = result
+        return result
 
     def evaluate_transparency(self) -> None:
         pass
@@ -72,7 +86,7 @@ class EvaluationEngine:
             "saved_at":    "%Y-%m-%d %H:%M:%S",
             "randomness":  { ... } | null,
             "security":    { ... } | null,
-            "performance": null,
+            "performance": { ... } | null,
             "transparency": null
         }
         """
@@ -89,7 +103,11 @@ class EvaluationEngine:
                 if self._security_result is not None
                 else None
             ),
-            "performance": None,
+            "performance": (
+                dataclasses.asdict(self._performance_result)
+                if self._performance_result is not None
+                else None
+            ),
             "transparency": None,
         }
 
