@@ -29,9 +29,9 @@ def main():
     rolls = mechanism.generate_rolls(args.count)
 
     mechanism_eval = EvaluationEngine(mechanism=mechanism, config=HMAC_CONFIG)
-    # mechanism_eval.evaluate_randomness(rolls)
-    # mechanism_eval.evaluate_security(rolls)
-    # mechanism_eval.evaluate_performance()
+    mechanism_eval.evaluate_randomness(rolls)
+    mechanism_eval.evaluate_security(rolls)
+    mechanism_eval.evaluate_performance()
     mechanism_eval.evaluate_transparency(rolls, mapping_fn=rejection_sampling)
     mechanism_eval.save_results(HMAC_RESULTS) 
 
