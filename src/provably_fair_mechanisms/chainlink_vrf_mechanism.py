@@ -1,7 +1,9 @@
+import hashlib
+import hmac as _hmac
 import os
 import time
 from datetime import datetime, timezone
-from typing import Any, List
+from typing import List
 
 import pandas as pd
 from dotenv import load_dotenv
@@ -9,19 +11,13 @@ from web3 import Web3
 from web3.exceptions import ContractLogicError
 from web3.types import Wei
 
-from src.config.configs import (
-    MAX_VALUE,
-    REJECTION_THRESHOLD,
-    VRF_COORDINATOR_DEPLOY_BLOCK,
-)
+from src.config.configs import MAX_VALUE, REJECTION_THRESHOLD
 from src.enigines.pfd import ProvablyFairDiceMechanism
 from src.logger.base_logger import BaseLogger
 from src.utils.common_operations import rejection_sampling
 from src.utils.types import RollRecord, VerificationResult
 
 load_dotenv()
-
-BATCH_SIZE = 100  # Sepolia callbackGasLimit cap of 2_500_000 covers ~120 words max
 
 CONSUMER_ABI = [
     {
@@ -42,50 +38,6 @@ CONSUMER_ABI = [
         "outputs": [
             {"name": "fulfilled", "type": "bool"},
             {"name": "randomWords", "type": "uint256[]"},
-        ],
-    },
-    {
-        # Used to extract requestId from the transaction receipt log.
-        "name": "RequestSent",
-        "type": "event",
-        "inputs": [
-            {"name": "requestId", "type": "uint256", "indexed": False},
-            {"name": "numWords", "type": "uint32", "indexed": False},
-        ],
-    },
-]
-
-COORDINATOR_ABI = [
-    {
-        # Emitted when a VRF request is made; contains the preseed and keyHash
-        # needed to verify the request originated from the coordinator.
-        "name": "RandomWordsRequested",
-        "type": "event",
-        "inputs": [
-            {"name": "keyHash", "type": "bytes32", "indexed": True},
-            {"name": "requestId", "type": "uint256", "indexed": False},
-            {"name": "preSeed", "type": "uint256", "indexed": False},
-            {"name": "subId", "type": "uint256", "indexed": True},
-            {"name": "minimumRequestConfirmations", "type": "uint16", "indexed": False},
-            {"name": "callbackGasLimit", "type": "uint32", "indexed": False},
-            {"name": "numWords", "type": "uint32", "indexed": False},
-            {"name": "extraArgs", "type": "bytes", "indexed": False},
-            {"name": "sender", "type": "address", "indexed": True},
-        ],
-    },
-    {
-        # Emitted when the oracle fulfils a request; the fulfilment block must
-        # be strictly after the request block to prove the output was unforeseeable.
-        "name": "RandomWordsFulfilled",
-        "type": "event",
-        "inputs": [
-            {"name": "requestId", "type": "uint256", "indexed": True},
-            {"name": "outputSeed", "type": "uint256", "indexed": False},
-            {"name": "subId", "type": "uint256", "indexed": True},
-            {"name": "payment", "type": "uint96", "indexed": False},
-            {"name": "nativePayment", "type": "bool", "indexed": False},
-            {"name": "success", "type": "bool", "indexed": False},
-            {"name": "onlyPremium", "type": "bool", "indexed": False},
         ],
     },
 ]
@@ -110,13 +62,20 @@ class ChainlinkVRFMechanism(ProvablyFairDiceMechanism):
         if not self._w3.is_connected():
             raise ConnectionError(f"Cannot connect to RPC: {rpc_url}")
 
+        for label, addr in [
+            ("VRF_CONSUMER_ADDRESS", self._consumer_address),
+            ("VRF_COORDINATOR_ADDRESS", self._coordinator_address),
+        ]:
+            code = self._w3.eth.get_code(Web3.to_checksum_address(addr))
+            if code in (b"", b"0x"):
+                raise ValueError(
+                    f"No contract deployed at {label}={addr}. "
+                    "Check your .env — the address may be a wallet or a wrong network."
+                )
+
         self._consumer = self._w3.eth.contract(
             address=Web3.to_checksum_address(self._consumer_address),
             abi=CONSUMER_ABI,
-        )
-        self._coordinator = self._w3.eth.contract(
-            address=Web3.to_checksum_address(self._coordinator_address),
-            abi=COORDINATOR_ABI,
         )
 
     def __str__(self) -> str:
@@ -124,23 +83,26 @@ class ChainlinkVRFMechanism(ProvablyFairDiceMechanism):
 
     # ======================== RANDOMNESS OPERATIONS ========================
 
-    def _submit_request(self, num_words: int) -> int:
-        tx_nonce = self._w3.eth.get_transaction_count(self._sender_address, "pending")
-        # Bump gas price by 50% so the tx is mined promptly on Sepolia.
-        gas_price = Wei(self._w3.eth.gas_price * 3 // 2)
-        tx = self._consumer.functions.requestRandomWords(False, num_words).build_transaction(
+    def _submit_request(self) -> int:
+        tx_nonce = self._w3.eth.get_transaction_count(
+            Web3.to_checksum_address(self._sender_address), "pending"
+        )
+        base_fee = Wei(self._w3.eth.get_block("latest")["baseFeePerGas"])  # type: ignore[index]
+        priority_fee = Wei(2_000_000_000)  # 2 gwei
+        max_fee = Wei(base_fee * 2 + priority_fee)
+
+        tx = self._consumer.functions.requestRandomWords(False, 1).build_transaction(
             {
-                "from": self._sender_address,
+                "from": self._sender_address,  # type: ignore[arg-type]
                 "nonce": tx_nonce,
-                "gas": 200_000,
-                "gasPrice": gas_price,
+                "gas": 250_000,
+                "maxFeePerGas": max_fee,
+                "maxPriorityFeePerGas": priority_fee,
             }
         )
-        signed = self._w3.eth.account.sign_transaction(
-            tx, private_key=self._private_key
-        )
+        signed = self._w3.eth.account.sign_transaction(tx, private_key=self._private_key)
         tx_hash = self._w3.eth.send_raw_transaction(signed.raw_transaction)
-        self._logger.info(f"Transaction sent: {tx_hash.hex()}")
+        self._logger.info(f"VRF request sent: https://sepolia.etherscan.io/tx/{tx_hash.hex()}")
         receipt = self._w3.eth.wait_for_transaction_receipt(tx_hash, timeout=300)
 
         if receipt["status"] != 1:
@@ -149,24 +111,21 @@ class ChainlinkVRFMechanism(ProvablyFairDiceMechanism):
                 "Check subscription balance and consumer registration."
             )
 
-        request_sent_topic = self._w3.keccak(text="RequestSent(uint256,uint32)")
+        # requestId is the first non-indexed field in the coordinator's
+        # RandomWordsRequested event — always the first 32 bytes of log data.
+        coordinator_address = Web3.to_checksum_address(self._coordinator_address)
         request_id = None
         for log in receipt["logs"]:
-            self._logger.debug(
-                f"Receipt log — address={log['address']} "
-                f"topics={[t.hex() for t in log['topics']]}"
-            )
-            if log["topics"] and log["topics"][0] == request_sent_topic:
-                request_id = int.from_bytes(log["data"][:32], "big")
+            if Web3.to_checksum_address(log["address"]) == coordinator_address:
+                request_id = int.from_bytes(bytes(log["data"][:32]), "big")
                 break
 
         if request_id is None:
-            self._logger.error(
-                f"Expected topic: {request_sent_topic.hex()}\n"
-                f"Logs in receipt: {[(log['address'], [t.hex() for t in log['topics']]) for log in receipt['logs']]}"
+            raise RuntimeError(
+                f"No coordinator log in receipt. tx={tx_hash.hex()}. "
+                f"Logs from addresses: {[log['address'] for log in receipt['logs']]}"
             )
-            raise RuntimeError(f"RequestSent event not found in receipt. tx={tx_hash.hex()}")
-        self._logger.info(f"Request submitted: requestId={request_id}, numWords={num_words}")
+        self._logger.info(f"VRF requestId={request_id}")
         return request_id
 
     def _wait_for_fulfilment(
@@ -174,7 +133,7 @@ class ChainlinkVRFMechanism(ProvablyFairDiceMechanism):
         request_id: int,
         poll_interval: int = 5,
         max_wait: int = 600,
-    ) -> List[int]:
+    ) -> int:
         deadline = time.monotonic() + max_wait
         while time.monotonic() < deadline:
             fulfilled, random_words = self._consumer.functions.getRequestStatus(
@@ -182,14 +141,10 @@ class ChainlinkVRFMechanism(ProvablyFairDiceMechanism):
             ).call(block_identifier="latest")
 
             if fulfilled and random_words:
-                self._logger.info(
-                    f"requestId={request_id} fulfilled ({len(random_words)} words)."
-                )
-                return random_words
+                self._logger.info(f"requestId={request_id} fulfilled.")
+                return random_words[0]
 
-            self._logger.debug(
-                f"requestId={request_id} pending, retrying in {poll_interval}s..."
-            )
+            self._logger.debug(f"requestId={request_id} pending, retrying in {poll_interval}s...")
             time.sleep(poll_interval)
 
         raise TimeoutError(
@@ -197,66 +152,55 @@ class ChainlinkVRFMechanism(ProvablyFairDiceMechanism):
             "Check your subscription balance at vrf.chain.link."
         )
 
-    def generate_rolls(
-        self, quantity: int, save_rolls: bool = True
-    ) -> List[RollRecord]:
-        self._logger.info(f"Coordinator (server_seed): {self._coordinator_address}")
-        self._logger.info(f"Consumer (client_seed): {self._consumer_address}")
+    def generate_rolls(self, quantity: int, save_rolls: bool = True) -> List[RollRecord]:
+        # 1. Mine one VRF word — this becomes the server seed for the session.
+        request_id = self._submit_request()
+        vrf_word = self._wait_for_fulfilment(request_id)
+        server_seed_bytes = vrf_word.to_bytes(32, "big")
+        server_seed = server_seed_bytes.hex()
+        client_seed = self._consumer_address
+        timestamp = datetime.now(timezone.utc)
 
+        self._logger.info(f"Session server_seed={server_seed} (VRF requestId={request_id})")
+
+        # 2. Derive all rolls via HMAC-SHA256 — no further on-chain calls.
         rolls: List[RollRecord] = []
         records = []
-        remaining = quantity
-
-        while remaining > 0:
-            batch = min(remaining, BATCH_SIZE)
-            self._logger.info(
-                f"Requesting batch of {batch} words "
-                f"({quantity - remaining + batch}/{quantity} total)..."
+        for nonce in range(quantity):
+            raw_output = _hmac.new(
+                key=server_seed_bytes,
+                msg=f"{client_seed}{nonce}".encode(),
+                digestmod=hashlib.sha256,
+            ).digest()
+            outcome = rejection_sampling(
+                raw_output=raw_output,
+                rejection_threshold=REJECTION_THRESHOLD,
+                max_value=MAX_VALUE,
+            )
+            records.append(
+                {
+                    "server_seed": server_seed,
+                    "client_seed": client_seed,
+                    "nonce": nonce,
+                    "raw_output": raw_output.hex(),
+                    "outcome": outcome,
+                    "timestamp": timestamp.isoformat(),
+                    "mechanism_id": self.MECHANISM_ID,
+                }
+            )
+            rolls.append(
+                RollRecord(
+                    server_seed=server_seed,
+                    client_seed=client_seed,
+                    nonce=nonce,
+                    raw_output=raw_output,
+                    outcome=outcome,
+                    timestamp=timestamp,
+                    mechanism_id=self.MECHANISM_ID,
+                )
             )
 
-            request_id = self._submit_request(num_words=batch)
-            random_words = self._wait_for_fulfilment(request_id)
-            timestamp = datetime.now(timezone.utc)
-
-            for word_index, raw_word in enumerate(random_words):
-                raw_output = raw_word.to_bytes(32, "big")
-                outcome = rejection_sampling(
-                    raw_output=raw_output,
-                    rejection_threshold=REJECTION_THRESHOLD,
-                    max_value=MAX_VALUE,
-                )
-                # Encode request_id and word_index into a single unique nonce so
-                # verify() can reverse it to look up the correct on-chain request.
-                nonce = request_id * BATCH_SIZE + word_index
-
-                records.append(
-                    {
-                        "server_seed": self._coordinator_address,
-                        "client_seed": self._consumer_address,
-                        "nonce": nonce,
-                        "raw_output": raw_output.hex(),
-                        "outcome": outcome,
-                        "timestamp": timestamp.isoformat(),
-                        "mechanism_id": self.MECHANISM_ID,
-                    }
-                )
-                rolls.append(
-                    RollRecord(
-                        server_seed=self._coordinator_address,
-                        client_seed=self._consumer_address,
-                        nonce=nonce,
-                        raw_output=raw_output,
-                        outcome=outcome,
-                        timestamp=timestamp,
-                        mechanism_id=self.MECHANISM_ID,
-                    )
-                )
-                self._logger.debug(f"requestId={request_id}[{word_index}] -> outcome={outcome}")
-
-            remaining -= batch
-
         df = pd.DataFrame(records)
-
         if save_rolls:
             os.makedirs(os.path.dirname(self._output_file), exist_ok=True)
             df.to_csv(self._output_file, index=False)
@@ -269,72 +213,24 @@ class ChainlinkVRFMechanism(ProvablyFairDiceMechanism):
     # ======================= VERIFICATION OPERATIONS =======================
 
     def verify(self, record: RollRecord) -> VerificationResult:
-        """
-        Verifies a VRF roll by querying on-chain coordinator events for the
-        given requestId (record.nonce) and confirming three properties:
-        1. The requestId was assigned by the coordinator, not an EOA.
-        2. A RandomWordsFulfilled event exists for the requestId.
-        3. The fulfilment block is strictly after the request block.
-
-        The recomputed outcome is derived from the stored raw_output, which the
-        coordinator produced; if the raw_output itself is untampered the outcome
-        will match.
-        """
-        # Decode the composite nonce back into request_id and word_index.
-        request_id = record.nonce // BATCH_SIZE
-
-        # Fetch the RandomWordsRequested event for this requestId.
-        requested_events = self._coordinator.events.RandomWordsRequested.get_logs(
-            argument_filters={"requestId": request_id},
-            fromBlock=VRF_COORDINATOR_DEPLOY_BLOCK,
-        )
-        if not requested_events:
-            return VerificationResult(
-                record=record,
-                disclosed_server_seed=self._coordinator_address,
-                recomputed_outcome=-1,
-                match=False,
-            )
-        request_block = requested_events[0]["blockNumber"]
-
-        # Fetch the RandomWordsFulfilled event for this requestId.
-        fulfilled_events = self._coordinator.events.RandomWordsFulfilled.get_logs(
-            argument_filters={"requestId": request_id},
-            fromBlock=request_block,
-        )
-        if not fulfilled_events:
-            return VerificationResult(
-                record=record,
-                disclosed_server_seed=self._coordinator_address,
-                recomputed_outcome=-1,
-                match=False,
-            )
-        fulfilment_block = fulfilled_events[0]["blockNumber"]
-
-        # Fulfilment must be strictly after the request to guarantee the oracle
-        # could not have known the output at request time.
-        if fulfilment_block <= request_block:
-            return VerificationResult(
-                record=record,
-                disclosed_server_seed=self._coordinator_address,
-                recomputed_outcome=-1,
-                match=False,
-            )
-
-        # Recompute the outcome from the stored raw_output bytes.
+        # Recompute HMAC from the stored server_seed, client_seed, and nonce.
+        server_seed_bytes = bytes.fromhex(record.server_seed)
+        raw_output = _hmac.new(
+            key=server_seed_bytes,
+            msg=f"{record.client_seed}{record.nonce}".encode(),
+            digestmod=hashlib.sha256,
+        ).digest()
         recomputed_outcome = rejection_sampling(
-            raw_output=record.raw_output,
+            raw_output=raw_output,
             rejection_threshold=REJECTION_THRESHOLD,
             max_value=MAX_VALUE,
         )
-
-        recorded_str = f"{record.outcome:04d}"
-        recomputed_str = f"{recomputed_outcome:04d}"
-        is_match = self.safe_compare(recorded_str, recomputed_str)
-
+        is_match = self.safe_compare(
+            f"{record.outcome:04d}", f"{recomputed_outcome:04d}"
+        )
         return VerificationResult(
             record=record,
-            disclosed_server_seed="",
+            disclosed_server_seed=record.server_seed,
             recomputed_outcome=recomputed_outcome,
             match=is_match,
         )
