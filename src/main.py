@@ -1,43 +1,83 @@
 import argparse
 
 from src.config.configs import MAX_VALUE
-from src.enigines.evaluation import EvaluationConfig, EvaluationEngine
+from src.enigines.config import EvaluationConfig
+from src.enigines.evaluation import EvaluationEngine
+from src.provably_fair_mechanisms.chainlink_vrf_mechanism import ChainlinkVRFMechanism
+from src.provably_fair_mechanisms.drand_mechanism import DrandMechanism
 from src.provably_fair_mechanisms.hmac_mechanism import HMACMechanism
 from src.utils.common_operations import rejection_sampling
+from src.utils.data_loader import load_roll_records_from
 
-HMAC_OUTPUT = "data/rolls/hmac_rolls.csv"
-HMAC_RESULTS = "data/results/hmac_eval_results.json"
-
-
-HMAC_CONFIG = EvaluationConfig(
+CONFIG = EvaluationConfig(
     n_faces=MAX_VALUE,
     distribution_min_rolls=500,
 )
 
+# IGNORE THIS: For demonstration, I hardcode the mechanisms and their associated files here.
+mechanisms_under_evaluation = {
+    "OFF_CHAIN_HMAC": {
+        "mechanism": HMACMechanism(output_file="data/rolls/hmac_rolls.csv"),
+        "rolls_file": "data/rolls/hmac_rolls.csv",
+        "results_file": "data/results/hmac_eval_results.json",
+    },
+    "CHAINLINK_VRF": {
+        "mechanism": ChainlinkVRFMechanism(output_file="data/rolls/chainlink_vrf_rolls.csv"),
+        "rolls_file": "data/rolls/chainlink_vrf_rolls.csv",
+        "results_file": "data/results/chainlink_vrf_eval_results.json",
+    },
+    "DRAND": {
+        "mechanism": DrandMechanism(output_file="data/rolls/drand_rolls.csv"),
+        "rolls_file": "data/rolls/drand_rolls.csv",
+        "results_file": "data/results/drand_eval_results.json",
+    },
+}
+
+SELECTED_MECHANISM = "OFF_CHAIN_HMAC" # IGNORE THIS: For demonstration, I hardcode the mechanism selection here.
+
 
 def main():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+        description="Provably Fair Dice Evaluation Framework",
+    )
     parser.add_argument(
         "--count",
         type=int,
-        default=10,
-        help="Number of rolls to generate.",
+        default=0,
+        help="Number of rolls to generate. If 0, loads existing rolls from the rolls file.",
+    )
+    parser.add_argument(
+        "--tier",
+        choices=["LIGHT", "IN_DEPTH", "FULL_DEPTH"],
+        default="LIGHT",
+        help="Evaluation depth tier (default: LIGHT).",
     )
     args = parser.parse_args()
+    
+    mechanism = mechanisms_under_evaluation[SELECTED_MECHANISM]["mechanism"]
+    results_file_path = mechanisms_under_evaluation[SELECTED_MECHANISM]["results_file"]
+    rolls_file_path = mechanisms_under_evaluation[SELECTED_MECHANISM]["rolls_file"]
 
-    mechanism = HMACMechanism(output_file=HMAC_OUTPUT)
-    rolls = mechanism.generate_rolls(args.count)
+    if args.count > 0:
+        rolls = mechanism.generate_rolls(quantity=args.count)
+    else:
+        rolls = load_roll_records_from(rolls_file_path)
 
-    mechanism_eval = EvaluationEngine(mechanism=mechanism, config=HMAC_CONFIG)
-    mechanism_eval.evaluate_randomness(rolls)
-    mechanism_eval.evaluate_security(rolls)
-    mechanism_eval.evaluate_performance()
-    mechanism_eval.evaluate_transparency(rolls, mapping_fn=rejection_sampling)
-    mechanism_eval.save_results(HMAC_RESULTS) 
+    engine = EvaluationEngine(
+        mechanism=mechanism,
+        config=CONFIG,
+        results_file_path=results_file_path,
+    )
+
+    engine.run_evaluation(
+        rolls=rolls,
+        tier=args.tier,
+        mapping_fn=rejection_sampling,
+    )
 
 
 if __name__ == "__main__":
     """
-    Usage: python -m src.main --count <number_of_rolls>
+    Usage: python -m src.main optional[--count <quanitiy>] --tier <LIGHT|IN_DEPTH|FULL_DEPTH>
     """
     main()
