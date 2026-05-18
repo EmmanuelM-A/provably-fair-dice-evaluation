@@ -7,6 +7,7 @@ from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 
+SEED: int = 42
 
 LOG_DIRECTORY: str = f"{PROJECT_ROOT}/logs"
 LOG_FORMAT: str = "%(asctime)s [%(levelname)s] [%(name)s]: %(message)s"

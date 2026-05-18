@@ -7,6 +7,8 @@ class EvaluationConfig:
     # Must match the actual output range of the mechanism under evaluation.
     # With n_faces=F, the chi-square test requires at least 5*F rolls.
     n_faces: int = 6
+    
+    significance_level: float = 0.01
 
     # Minimum rolls required before any distribution test runs.
     distribution_min_rolls: int = 500
