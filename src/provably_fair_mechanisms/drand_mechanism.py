@@ -98,13 +98,15 @@ class DrandMechanism(ProvablyFairDiceMechanism):
         self._logger.info("Fetching drand chain info...")
         chain_info = self._fetch_chain_info()
 
-        # server_seed is set once per session, not per roll.
-        # This reflects how drand works: the chain hash is fixed and public.
-        # It plays the role of the server seed commitment — it identifies the
-        # source without revealing individual beacon outputs in advance.
+        # server_seed = chain hash (fixed public identifier of the randomness source).
+        # client_seed = chain public key (the cryptographic parameter clients use
+        # to verify beacon signatures — the closest analogue to a client commitment
+        # in a protocol that takes no per-roll client input).
         server_seed = chain_info["hash"]
+        client_seed = chain_info["public_key"]
         period_seconds = chain_info["period"]
         self._logger.info(f"Chain hash (server_seed): {server_seed}")
+        self._logger.info(f"Public key (client_seed): {client_seed}")
         self._logger.info(f"Beacon period: {period_seconds}s")
 
         # Fetch the latest beacon to find the current round number.
@@ -155,15 +157,9 @@ class DrandMechanism(ProvablyFairDiceMechanism):
 
             records.append(
                 {
-                    # server_seed is the chain hash set once at session start.
                     "server_seed": server_seed,
-                    # client_seed is empty, neither the player nor the platform
-                    # supplies any input to drand. This is architecturally significant.
-                    "client_seed": "",
-                    # nonce is the round number, drand's monotonically incrementing
-                    # counter that uniquely identifies each beacon.
+                    "client_seed": client_seed,
                     "nonce": target_round,
-                    # raw_output stored as hex so it survives serialisation round-trips.
                     "raw_output": raw_output.hex(),
                     "outcome": outcome,
                     "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -174,7 +170,7 @@ class DrandMechanism(ProvablyFairDiceMechanism):
             rolls.append(
                 RollRecord(
                     server_seed=server_seed,
-                    client_seed="",
+                    client_seed=client_seed,
                     nonce=target_round,
                     raw_output=raw_output,
                     outcome=outcome,
