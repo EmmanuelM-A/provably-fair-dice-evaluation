@@ -3,12 +3,14 @@ import argparse
 from src.config.configs import MAX_VALUE
 from src.enigines.config import EvaluationConfig
 from src.enigines.evaluation import EvaluationEngine
+from src.enigines.pfd import ProvablyFairDiceMechanism
 from src.provably_fair_mechanisms.chainlink_vrf_mechanism import ChainlinkVRFMechanism
 from src.provably_fair_mechanisms.drand_mechanism import DrandMechanism
 from src.provably_fair_mechanisms.hmac_mechanism import HMACMechanism
 from src.utils.common_operations import rejection_sampling
 from src.utils.data_loader import load_roll_records_from
 
+# Unifrom configuration for all evaluations. Adjust as needed for different scenarios.
 CONFIG = EvaluationConfig(
     n_faces=MAX_VALUE,
     distribution_min_rolls=500,
@@ -54,9 +56,9 @@ def main():
     )
     args = parser.parse_args()
     
-    mechanism = mechanisms_under_evaluation[SELECTED_MECHANISM]["mechanism"]
-    results_file_path = mechanisms_under_evaluation[SELECTED_MECHANISM]["results_file"]
-    rolls_file_path = mechanisms_under_evaluation[SELECTED_MECHANISM]["rolls_file"]
+    mechanism: ProvablyFairDiceMechanism = mechanisms_under_evaluation[SELECTED_MECHANISM]["mechanism"]
+    results_file_path: str = mechanisms_under_evaluation[SELECTED_MECHANISM]["results_file"]
+    rolls_file_path: str = mechanisms_under_evaluation[SELECTED_MECHANISM]["rolls_file"]
 
     if args.count > 0:
         rolls = mechanism.generate_rolls(quantity=args.count)

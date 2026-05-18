@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from scipy.stats import chisquare
 
 from src.enigines.config import EvaluationConfig
+from src.provably_fair_mechanisms.baised_mechanism import BiasedMechanism
 from src.utils.types import RollRecord
 
 
@@ -22,13 +23,15 @@ class SanityCheckResult:
 
 
 def run_sanity_check(
-    rolls: list[RollRecord],
     configs: EvaluationConfig,
 ) -> SanityCheckResult:
     """
     Runs a sanity check on the provided rolls by applying
     a chi-square test to verify it is correctly rejected.
     """
+    
+    rolls = BiasedMechanism(config=configs).generate_rolls(quantity=configs.distribution_min_rolls)
+    
     outcomes = [r.outcome for r in rolls]
     n_rolls = len(outcomes)
     n_faces = configs.n_faces
@@ -51,7 +54,7 @@ def run_sanity_check(
             f"(chi2={stat:.2f}, p={p_value:.4e} >= {significance}). "
             "Evaluation halted!"
         )
-    
+
     if not passed:
         raise RuntimeError(message)
 

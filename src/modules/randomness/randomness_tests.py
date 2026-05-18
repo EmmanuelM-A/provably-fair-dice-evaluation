@@ -99,7 +99,7 @@ class RandomnessTests:
 
     def _run_sanity_check(self, rolls: List[RollRecord]) -> SanityCheckResult:
         self._logger.info("Running framework sanity check...")
-        result = run_sanity_check(rolls=rolls, configs=self.config)
+        result = run_sanity_check(configs=self.config)
         self._logger.info(result.message)
         return result
 
