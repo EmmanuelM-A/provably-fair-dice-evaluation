@@ -21,3 +21,14 @@ def rejection_sampling(
         "finding an accepted value. This is an incredibly rare event "
         "and likely indicates a bug in the digest or threshold calculation."
     )
+
+
+def chi_square_test(observed: list[int], expected: list[float]) -> tuple[float, float]:
+    """
+    Perform a chi-square test comparing observed and expected frequencies.
+    Returns the chi-square statistic and p-value.
+    """
+    from scipy.stats import chisquare
+
+    stat, p_value = chisquare(f_obs=observed, f_exp=expected)
+    return float(stat), float(p_value)

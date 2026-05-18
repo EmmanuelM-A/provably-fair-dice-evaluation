@@ -22,7 +22,7 @@ from web3.exceptions import ContractLogicError
 
 from src.config.configs import MAX_VALUE, REJECTION_THRESHOLD
 from src.logger.base_logger import BaseLogger
-from src.utils.output_to_outcome_mapping import rejection_sampling
+from src.utils.common_operations import rejection_sampling
 
 load_dotenv()
 

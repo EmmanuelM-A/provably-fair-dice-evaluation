@@ -48,22 +48,13 @@ def _generate_biased_rolls(
     return rng.choice(faces, size=n, p=_BIASED_PROBS).tolist()
 
 
-def run_sanity_check(
+def _run_sanity_check(
     n_rolls: int = _N_ROLLS,
     significance: float = _SIGNIFICANCE,
     seed: int | None = None,
 ) -> SanityCheckResult:
     """
     Generate rolls from a biased die and verify the chi-square test rejects them.
-
-    Returns a SanityCheckResult. Does not raise on failure; use
-    assert_sanity_check() for the hard-halt variant.
-
-    Parameters
-    ----------
-    n_rolls:      Number of rolls to generate. Default 10,000.
-    significance: Rejection threshold for the p-value. Default 0.05.
-    seed:         Optional RNG seed for reproducibility.
     """
     rolls = _generate_biased_rolls(n=n_rolls, seed=seed)
 
@@ -105,7 +96,7 @@ def assert_sanity_check(
     A SanityCheckError indicates the test battery itself is broken, not
     the mechanism under evaluation.
     """
-    result = run_sanity_check(n_rolls=n_rolls, significance=significance, seed=seed)
+    result = _run_sanity_check(n_rolls=n_rolls, significance=significance, seed=seed)
     if not result.passed:
         raise SanityCheckError(result.message)
     return result

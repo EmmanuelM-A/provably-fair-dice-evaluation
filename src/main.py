@@ -3,7 +3,7 @@ import argparse
 from src.config.configs import MAX_VALUE
 from src.enigines.evaluation import EvaluationConfig, EvaluationEngine
 from src.provably_fair_mechanisms.hmac_mechanism import HMACMechanism
-from src.utils.output_to_outcome_mapping import rejection_sampling
+from src.utils.common_operations import rejection_sampling
 
 HMAC_OUTPUT = "data/rolls/hmac_rolls.csv"
 HMAC_RESULTS = "data/results/hmac_eval_results.json"

@@ -9,7 +9,7 @@ import pandas as pd
 
 from src.enigines.pfd import ProvablyFairDiceMechanism
 from src.logger.base_logger import BaseLogger
-from src.utils.output_to_outcome_mapping import rejection_sampling
+from src.utils.common_operations import rejection_sampling
 from src.utils.types import RollRecord, VerificationResult
 
 

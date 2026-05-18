@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem -Recurse -Path \"c:\\\\Users\\\\maduk\\\\Documents\\\\Lancaster University\\\\CompSoc\\\\Year 4\\\\SCC.421\\\\Implementation Phase\\\\provably-fair-dice-evaluation\" -ErrorAction SilentlyContinue)",
+      "Bash(Select-Object FullName)",
+      "Bash(Sort-Object FullName)",
+      "Bash(Format-Table -AutoSize)",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\maduk\\\\Documents\\\\Lancaster University\\\\CompSoc\\\\Year 4\\\\SCC.421\\\\Implementation Phase\\\\provably-fair-dice-evaluation\" -Recurse -Directory)"
+    ]
+  }
+}

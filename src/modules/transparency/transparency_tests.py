@@ -7,7 +7,7 @@ from src.logger.base_logger import BaseLogger
 from src.modules.data import BinaryResult
 from src.modules.transparency.determinism import determinism_test
 from src.modules.transparency.mapping_reproducibility import outcome_mapping_reproducibility
-from src.utils.output_to_outcome_mapping import rejection_sampling
+from src.utils.common_operations import rejection_sampling
 from src.utils.types import RollRecord
 
 
