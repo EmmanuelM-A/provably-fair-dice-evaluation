@@ -17,10 +17,8 @@ from typing import List
 import numpy as np
 from scipy import stats
 
+from src.enigines.config import EvaluationConfig
 from src.modules.data import TestResult
-
-
-SIGNIFICANCE_LEVEL = 0.01
 
 
 # ---------------------------------------------------------------------------
@@ -49,6 +47,7 @@ def _check_expected_frequency(n_rolls: int, n_bins: int, test_name: str) -> None
 
 def chi_square_test(
     outcomes: List[int],
+    configs: EvaluationConfig,
     n_faces: int = 6,
     n_rolls: int = 10_000,
 ) -> TestResult:
@@ -94,7 +93,7 @@ def chi_square_test(
     return TestResult(
         test_name="Chi-Square Uniformity Test",
         p_value=float(p_value),
-        passed=p_value >= SIGNIFICANCE_LEVEL,
+        passed=p_value >= configs.significance_level,
         parameters_used={
             "n_rolls_observed": n,
             "n_rolls_expected_parameter": n_rolls,
@@ -111,7 +110,7 @@ def chi_square_test(
 # Test 2: Cramer-von Mises Uniformity Test
 # ---------------------------------------------------------------------------
 
-def cramer_von_mises_test(outcomes: List[int]) -> TestResult:
+def cramer_von_mises_test(outcomes: List[int], configs: EvaluationConfig) -> TestResult:
     """
     Tests whether dice outcomes follow a discrete uniform distribution by
     measuring the distance between the empirical CDF and the theoretical
@@ -159,7 +158,7 @@ def cramer_von_mises_test(outcomes: List[int]) -> TestResult:
     return TestResult(
         test_name="Cramer-von Mises Uniformity Test",
         p_value=float(result.pvalue),
-        passed=result.pvalue >= SIGNIFICANCE_LEVEL,
+        passed=result.pvalue >= configs.significance_level,
         parameters_used={
             "n_rolls": n,
             "n_faces_inferred": n_faces,
@@ -174,7 +173,7 @@ def cramer_von_mises_test(outcomes: List[int]) -> TestResult:
 # Test 3: Runs Independence Test
 # ---------------------------------------------------------------------------
 
-def runs_independence_test(outcomes: List[int]) -> TestResult:
+def runs_independence_test(outcomes: List[int], configs: EvaluationConfig) -> TestResult:
     """
     Tests whether consecutive dice outcomes are independent by examining the
     run structure of the sequence relative to its median.
@@ -233,7 +232,7 @@ def runs_independence_test(outcomes: List[int]) -> TestResult:
     # Two-sided p-value from normal approximation
     p_value = 2.0 * (1.0 - stats.norm.cdf(abs(z)))
     
-    passed = p_value >= SIGNIFICANCE_LEVEL
+    passed = bool(p_value >= configs.significance_level)
 
     return TestResult(
         test_name="Runs Independence Test",

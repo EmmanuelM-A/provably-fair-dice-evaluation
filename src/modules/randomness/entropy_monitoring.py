@@ -31,10 +31,6 @@ class MonitorResult:
     parameters_used: Dict[str, Any] = field(default_factory=dict)
 
 
-# ---------------------------------------------------------------------------
-# Test 1: Repetition Count Test
-# ---------------------------------------------------------------------------
-
 def repetition_count_test(samples: list, threshold_c: int) -> MonitorResult:
     """
     Detects runs of identical consecutive values that exceed a threshold.
@@ -48,21 +44,6 @@ def repetition_count_test(samples: list, threshold_c: int) -> MonitorResult:
     This matches the NIST SP 800-90B Section 4.4.1 procedure: an alarm fires
     when C consecutive samples are identical, indicating the effective entropy
     per sample has dropped below the acceptable level.
-
-    Parameters
-    ----------
-    samples : list
-        Ordered sequence of observed outputs in generation order. Values
-        may be any comparable type (int, bytes, str).
-    threshold_c : int
-        Number of consecutive identical values that triggers an alarm.
-        Must be >= 2. Derive this from the entropy estimate of your source:
-        C = ceil(1 / H) where H is the min-entropy per sample in bits,
-        or use C = 20 as a conservative default for a uniform 6-face die.
-
-    Returns
-    -------
-    MonitorResult
     """
     if threshold_c < 2:
         raise ValueError(
@@ -97,10 +78,6 @@ def repetition_count_test(samples: list, threshold_c: int) -> MonitorResult:
     )
 
 
-# ---------------------------------------------------------------------------
-# Test 2: Adaptive Proportion Test
-# ---------------------------------------------------------------------------
-
 def adaptive_proportion_test(
     samples: list,
     window_w: int,
@@ -118,37 +95,6 @@ def adaptive_proportion_test(
     It catches entropy degradation that the Repetition Count Test misses: a
     source where the same value appears frequently but not consecutively will
     pass the repetition check but fail here.
-
-    Parameters
-    ----------
-    samples : list
-        Ordered sequence of observed outputs in generation order.
-    window_w : int
-        Width of the sliding window in samples. Must be >= 2 and <= len(samples).
-        NIST SP 800-90B recommends W = 512 for binary sources; for a 6-face die
-        a window of 512 to 1024 rolls is appropriate.
-    threshold : int
-        Maximum number of times any single value may appear within one window
-        before an alarm fires. Must be >= 1.
-        Derive from the acceptable false-positive rate and the expected
-        per-value probability: threshold = C where P(count >= C) < alpha
-        under the null hypothesis of uniform output.
-        For a 6-face die with W=512, a conservative threshold is 120
-        (expected count ~85 under uniformity, threshold set at ~99th percentile).
-
-    Returns
-    -------
-    MonitorResult
-
-    Notes
-    -----
-    An alarm at position i means the window ending at sample index i contained
-    a value that appeared >= threshold times. Multiple alarms within overlapping
-    windows covering the same anomaly are recorded separately; alarm_positions
-    contains every window-end index that triggered.
-
-    Runtime is O(n * W) in the naive case. The implementation uses an
-    incremental counter dict that updates in O(1) per step, giving O(n) overall.
     """
     if window_w < 2:
         raise ValueError(f"window_w must be >= 2. Got {window_w}.")

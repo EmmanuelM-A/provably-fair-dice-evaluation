@@ -15,15 +15,14 @@ import math
 import numpy as np
 from scipy import special, stats
 
+from src.enigines.config import EvaluationConfig
 from src.modules.data import TestResult
-
-SIGNIFICANCE_LEVEL = 0.01
 
 
 class NistTests(ABC):
     @abstractmethod
     def run_all_tests(
-        self, bit_sequence: bytes, sequence_length: int
+        self, bit_sequence: bytes, sequence_length: int, configs: EvaluationConfig
     ) -> dict[str, TestResult]:
         raise NotImplementedError()
 
@@ -39,7 +38,7 @@ def _to_bit_array(bit_sequence: bytes, sequence_length: int) -> np.ndarray:
 # ---------------------------------------------------------------------------
 
 
-def _frequency_monobit_test(bits: np.ndarray) -> TestResult:
+def _frequency_monobit_test(bits: np.ndarray, configs: EvaluationConfig) -> TestResult:
     """
     NIST SP 800-22 Section 2.1.
 
@@ -54,7 +53,7 @@ def _frequency_monobit_test(bits: np.ndarray) -> TestResult:
     return TestResult(
         test_name="Frequency (Monobit) Test",
         p_value=p_value,
-        passed=p_value >= SIGNIFICANCE_LEVEL,
+        passed=p_value >= configs.significance_level,
         parameters_used={"n": n, "s_obs": s_obs},
     )
 
@@ -64,7 +63,9 @@ def _frequency_monobit_test(bits: np.ndarray) -> TestResult:
 # ---------------------------------------------------------------------------
 
 
-def _frequency_block_test(bits: np.ndarray, block_size: int = 128) -> TestResult:
+def _frequency_block_test(
+    bits: np.ndarray, configs: EvaluationConfig, block_size: int = 128
+) -> TestResult:
     """
     NIST SP 800-22 Section 2.2.
 
@@ -82,7 +83,7 @@ def _frequency_block_test(bits: np.ndarray, block_size: int = 128) -> TestResult
     return TestResult(
         test_name="Frequency within a Block",
         p_value=p_value,
-        passed=p_value >= SIGNIFICANCE_LEVEL,
+        passed=p_value >= configs.significance_level,
         parameters_used={"n": n, "M": m, "N": num_blocks, "chi_sq": chi_sq},
     )
 
@@ -92,7 +93,7 @@ def _frequency_block_test(bits: np.ndarray, block_size: int = 128) -> TestResult
 # ---------------------------------------------------------------------------
 
 
-def _runs_test(bits: np.ndarray) -> TestResult:
+def _runs_test(bits: np.ndarray, configs: EvaluationConfig) -> TestResult:
     """
     NIST SP 800-22 Section 2.3.
 
@@ -119,7 +120,7 @@ def _runs_test(bits: np.ndarray) -> TestResult:
     return TestResult(
         test_name="Runs Test",
         p_value=p_value,
-        passed=p_value >= SIGNIFICANCE_LEVEL,
+        passed=p_value >= configs.significance_level,
         parameters_used={"n": n, "pi": pi, "v_obs": int(v_obs)},
     )
 
@@ -129,7 +130,7 @@ def _runs_test(bits: np.ndarray) -> TestResult:
 # ---------------------------------------------------------------------------
 
 
-def _longest_run_ones_test(bits: np.ndarray) -> TestResult:
+def _longest_run_ones_test(bits: np.ndarray, configs: EvaluationConfig) -> TestResult:
     """
     NIST SP 800-22 Section 2.4.
 
@@ -177,7 +178,7 @@ def _longest_run_ones_test(bits: np.ndarray) -> TestResult:
     return TestResult(
         test_name="Longest Run of Ones in a Block",
         p_value=p_value,
-        passed=p_value >= SIGNIFICANCE_LEVEL,
+        passed=p_value >= configs.significance_level,
         parameters_used={"n": n, "M": m, "N": num_blocks, "chi_sq": chi_sq},
     )
 
@@ -187,7 +188,9 @@ def _longest_run_ones_test(bits: np.ndarray) -> TestResult:
 # ---------------------------------------------------------------------------
 
 
-def _binary_matrix_rank_test(bits: np.ndarray, matrix_size: int = 32) -> TestResult:
+def _binary_matrix_rank_test(
+    bits: np.ndarray, configs: EvaluationConfig, matrix_size: int = 32
+) -> TestResult:
     """
     NIST SP 800-22 Section 2.5.
 
@@ -241,7 +244,7 @@ def _binary_matrix_rank_test(bits: np.ndarray, matrix_size: int = 32) -> TestRes
     return TestResult(
         test_name="Binary Matrix Rank Test",
         p_value=p_value,
-        passed=p_value >= SIGNIFICANCE_LEVEL,
+        passed=p_value >= configs.significance_level,
         parameters_used={
             "n": n,
             "M": m,
@@ -257,7 +260,7 @@ def _binary_matrix_rank_test(bits: np.ndarray, matrix_size: int = 32) -> TestRes
 # ---------------------------------------------------------------------------
 
 
-def _dft_spectral_test(bits: np.ndarray) -> TestResult:
+def _dft_spectral_test(bits: np.ndarray, configs: EvaluationConfig) -> TestResult:
     """
     NIST SP 800-22 Section 2.6.
 
@@ -277,7 +280,7 @@ def _dft_spectral_test(bits: np.ndarray) -> TestResult:
     return TestResult(
         test_name="Discrete Fourier Transform (Spectral) Test",
         p_value=p_value,
-        passed=p_value >= SIGNIFICANCE_LEVEL,
+        passed=p_value >= configs.significance_level,
         parameters_used={
             "n": n,
             "threshold": threshold,
@@ -292,7 +295,7 @@ def _dft_spectral_test(bits: np.ndarray) -> TestResult:
 # ---------------------------------------------------------------------------
 
 
-def _cumulative_sums_test(bits: np.ndarray) -> TestResult:
+def _cumulative_sums_test(bits: np.ndarray, configs: EvaluationConfig) -> TestResult:
     """
     NIST SP 800-22 Section 2.13.
 
@@ -336,7 +339,7 @@ def _cumulative_sums_test(bits: np.ndarray) -> TestResult:
     return TestResult(
         test_name="Cumulative Sums Test",
         p_value=p_value,
-        passed=p_value >= SIGNIFICANCE_LEVEL,
+        passed=p_value >= configs.significance_level,
         parameters_used={
             "n": n,
             "p_value_forward": p_forward,
@@ -350,7 +353,9 @@ def _cumulative_sums_test(bits: np.ndarray) -> TestResult:
 # ---------------------------------------------------------------------------
 
 
-def _approximate_entropy_test(bits: np.ndarray, m: int = 10) -> TestResult:
+def _approximate_entropy_test(
+    bits: np.ndarray, configs: EvaluationConfig, m: int = 10
+) -> TestResult:
     """
     NIST SP 800-22 Section 2.12.
 
@@ -376,7 +381,7 @@ def _approximate_entropy_test(bits: np.ndarray, m: int = 10) -> TestResult:
     return TestResult(
         test_name="Approximate Entropy Test",
         p_value=p_value,
-        passed=p_value >= SIGNIFICANCE_LEVEL,
+        passed=p_value >= configs.significance_level,
         parameters_used={"n": n, "m": m, "ApEn": ap_en, "chi_sq": chi_sq},
     )
 
@@ -386,7 +391,9 @@ def _approximate_entropy_test(bits: np.ndarray, m: int = 10) -> TestResult:
 # ---------------------------------------------------------------------------
 
 
-def _serial_test(bits: np.ndarray, m: int = 16) -> TestResult:
+def _serial_test(
+    bits: np.ndarray, configs: EvaluationConfig, m: int = 16
+) -> TestResult:
     """
     NIST SP 800-22 Section 2.11.
 
@@ -420,7 +427,7 @@ def _serial_test(bits: np.ndarray, m: int = 16) -> TestResult:
     return TestResult(
         test_name="Serial Test",
         p_value=p_value,
-        passed=p_value >= SIGNIFICANCE_LEVEL,
+        passed=p_value >= configs.significance_level,
         parameters_used={
             "n": n,
             "m": m,
@@ -437,7 +444,7 @@ def _serial_test(bits: np.ndarray, m: int = 16) -> TestResult:
 # ---------------------------------------------------------------------------
 
 
-def _random_excursions_test(bits: np.ndarray) -> TestResult:
+def _random_excursions_test(bits: np.ndarray, configs: EvaluationConfig) -> TestResult:
     """
     NIST SP 800-22 Section 2.14.
 
@@ -506,7 +513,7 @@ def _random_excursions_test(bits: np.ndarray) -> TestResult:
     return TestResult(
         test_name="Random Excursions Test",
         p_value=min_p,
-        passed=min_p >= SIGNIFICANCE_LEVEL,
+        passed=min_p >= configs.significance_level,
         parameters_used={
             "n": n,
             "num_cycles": num_cycles,
@@ -528,7 +535,10 @@ class LightEvaluationNistTests(NistTests):
     MIN_BITS = 20_000
 
     def run_all_tests(
-        self, bit_sequence: bytes, sequence_length: int = 20_000
+        self,
+        bit_sequence: bytes,
+        sequence_length: int,
+        configs: EvaluationConfig,
     ) -> dict[str, TestResult]:
         if sequence_length < self.MIN_BITS:
             raise ValueError(
@@ -538,17 +548,15 @@ class LightEvaluationNistTests(NistTests):
 
         bits = _to_bit_array(bit_sequence, sequence_length)
 
-        results = {}
-
-        results["frequency_monobit"] = _frequency_monobit_test(bits)
-        results["frequency_block"] = _frequency_block_test(bits, block_size=128)
-        results["runs"] = _runs_test(bits)
-        results["longest_run_ones"] = _longest_run_ones_test(bits)
-        results["binary_matrix_rank"] = _binary_matrix_rank_test(bits, matrix_size=32)
-        results["dft_spectral"] = _dft_spectral_test(bits)
-        results["cumulative_sums"] = _cumulative_sums_test(bits)
-
-        return results
+        return {
+            "frequency_monobit": _frequency_monobit_test(bits, configs),
+            "frequency_block": _frequency_block_test(bits, configs, block_size=128),
+            "runs": _runs_test(bits, configs),
+            "longest_run_ones": _longest_run_ones_test(bits, configs),
+            "binary_matrix_rank": _binary_matrix_rank_test(bits, configs, matrix_size=32),
+            "dft_spectral": _dft_spectral_test(bits, configs),
+            "cumulative_sums": _cumulative_sums_test(bits, configs),
+        }
 
 
 class InDepthEvaluationNistTests(NistTests):
@@ -559,7 +567,10 @@ class InDepthEvaluationNistTests(NistTests):
     MIN_BITS = 1_000_000
 
     def run_all_tests(
-        self, bit_sequence: bytes, sequence_length: int = 1_000_000
+        self,
+        bit_sequence: bytes,
+        sequence_length: int,
+        configs: EvaluationConfig,
     ) -> dict[str, TestResult]:
         if sequence_length < self.MIN_BITS:
             raise ValueError(
@@ -569,10 +580,8 @@ class InDepthEvaluationNistTests(NistTests):
 
         bits = _to_bit_array(bit_sequence, sequence_length)
 
-        results = {}
-
-        results["approximate_entropy"] = _approximate_entropy_test(bits, m=10)
-        results["serial"] = _serial_test(bits, m=16)
-        results["random_excursions"] = _random_excursions_test(bits)
-
-        return results
+        return {
+            "approximate_entropy": _approximate_entropy_test(bits, configs, m=10),
+            "serial": _serial_test(bits, configs, m=16),
+            "random_excursions": _random_excursions_test(bits, configs),
+        }

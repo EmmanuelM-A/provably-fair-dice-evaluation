@@ -26,7 +26,7 @@ def run_sanity_check(
     configs: EvaluationConfig,
 ) -> SanityCheckResult:
     """
-    Runs a sanity check by generating rolls from a biased mechanism and applying
+    Runs a sanity check on the provided rolls by applying
     a chi-square test to verify it is correctly rejected.
     """
     outcomes = [r.outcome for r in rolls]
