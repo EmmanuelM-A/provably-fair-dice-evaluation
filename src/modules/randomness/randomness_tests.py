@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Dict, List, Literal, Optional
 
 from src.enigines.config import EvaluationConfig
@@ -35,16 +35,16 @@ class RandomnessLightEvaluationResult:
 
 
 @dataclass
-class RandomnessInDepthEvaluationResult(RandomnessLightEvaluationResult):
-    """Extends LIGHT with full distribution tests, NIST 8-10, and entropy monitoring."""
-    cramer_von_mises: Optional[TestResult] = None
-    runs_independence: Optional[TestResult] = None
+class RandomnessInDepthEvaluationResult:
+    """Cramér-von Mises, runs independence, NIST tests 8-10, and entropy monitoring."""
+    cramer_von_mises: TestResult
+    runs_independence: TestResult
+    entropy_monitoring: Dict[str, MonitorResult] = field(default_factory=dict)
     nist_in_depth: Optional[Dict[str, TestResult]] = None
-    entropy_monitoring: Optional[Dict[str, MonitorResult]] = None
 
 
 @dataclass
-class RandomnessFullDepthEvaluationResult(RandomnessInDepthEvaluationResult):
+class RandomnessFullDepthEvaluationResult:
     """Reserved for future extension beyond IN_DEPTH."""
     pass
 
@@ -147,30 +147,14 @@ class RandomnessTests:
     def _run_in_depth_evaluation_framework(
         self, rolls: List[RollRecord]
     ) -> RandomnessInDepthEvaluationResult:
-        """Everything in LIGHT plus Cramér-von Mises, runs independence,
-        NIST SP 800-22 tests 8-10, and runtime entropy monitoring."""
-        self._validate_rolls(rolls)
-        sanity = self._run_sanity_check(rolls)
+        """Cramér-von Mises, runs independence, NIST tests 8-10, entropy monitoring.
+        Assumes LIGHT has already run — does not repeat sanity check, chi-square,
+        or NIST light tests."""
         outcomes, raw_bytes, n_bits = self._extract_bits(rolls)
 
-        self._logger.info("Running distribution tests (in-depth)...")
-        chi_square = chi_square_test(outcomes, self.config, n_faces=self.config.n_faces)
+        self._logger.info("Running in-depth distribution tests...")
         cramer_von_mises = cramer_von_mises_test(outcomes, self.config)
         runs_independence = runs_independence_test(outcomes, self.config)
-
-        nist_light: Optional[Dict[str, TestResult]] = None
-        if n_bits >= self.config.nist_light_min_bits:
-            self._logger.info("Running NIST light-tier tests (1-7)...")
-            nist_light = LightEvaluationNistTests().run_all_tests(
-                bit_sequence=raw_bytes,
-                sequence_length=n_bits,
-                configs=self.config,
-            )
-        else:
-            self._logger.warning(
-                f"NIST light tier skipped: {n_bits} bits available, "
-                f"{self.config.nist_light_min_bits} required."
-            )
 
         nist_in_depth: Optional[Dict[str, TestResult]] = None
         if n_bits >= self.config.nist_in_depth_min_bits:
@@ -201,9 +185,6 @@ class RandomnessTests:
         }
 
         return RandomnessInDepthEvaluationResult(
-            sanity_check=sanity,
-            chi_square=chi_square,
-            nist_light=nist_light,
             cramer_von_mises=cramer_von_mises,
             runs_independence=runs_independence,
             nist_in_depth=nist_in_depth,
