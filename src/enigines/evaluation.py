@@ -1,8 +1,9 @@
 import dataclasses
 import json
 import os
+from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Any, Callable, List, Optional
+from typing import Any, Callable, List, Literal, Optional
 
 import numpy as np
 
@@ -36,99 +37,63 @@ class _JsonEncoder(json.JSONEncoder):
         return super().default(o)
 
 
+@dataclass
+class EvaluationResult:
+    """Aggregates results from all evaluation categories."""
+    mechanism: str
+    saved_at: str
+    randomness: Optional[RandomnessEvaluationResult] = None
+    security: Optional[SecurityEvaluationResult] = None
+    performance: Optional[PerformanceEvaluationResult] = None
+    transparency: Optional[TransparencyEvaluationResult] = None
+
+    def to_json(self) -> dict:
+        return dataclasses.asdict(self)
+
+
 class EvaluationEngine:
     def __init__(
         self,
         mechanism: ProvablyFairDiceMechanism,
+        results_file_path: str,
         config: EvaluationConfig = EvaluationConfig(),
     ) -> None:
-        self.mechanism = mechanism
-        self.config = config
+        self._mechanism = mechanism
+        self._config = config
+        self._results_file_path = results_file_path
         self._logger = BaseLogger(__name__)
-        self._randomness_result: Optional[RandomnessEvaluationResult] = None
-        self._security_result: Optional[SecurityEvaluationResult] = None
-        self._performance_result: Optional[PerformanceEvaluationResult] = None
-        self._transparency_result: Optional[TransparencyEvaluationResult] = None
 
-    def evaluate_randomness(self, rolls: List[RollRecord]) -> RandomnessEvaluationResult:
-        result = RandomnessTests(self.config).run(rolls)
-        self._randomness_result = result
-        return result
-
-    def evaluate_security(self, rolls: List[RollRecord]) -> SecurityEvaluationResult:
-        result = SecurityTests(self.config).run(rolls)
-        self._security_result = result
-        return result
-
-    def evaluate_performance(
-        self,
-        n_latency_requests: int = 1_000,
-        n_startup_requests: int = 10_000,
-        n_load_requests: int = 200,
-    ) -> PerformanceEvaluationResult:
-        result = PerformanceTests(self.config).run(
-            mechanism=self.mechanism,
-            n_latency_requests=n_latency_requests,
-            n_startup_requests=n_startup_requests,
-            n_load_requests=n_load_requests,
-        )
-        self._performance_result = result
-        return result
-
-    def evaluate_transparency(
+    def run_evaluation(
         self,
         rolls: List[RollRecord],
+        tier: Literal["LIGHT", "IN_DEPTH", "FULL_DEPTH"],
         mapping_fn: Optional[Callable[[bytes], int]] = None,
-    ) -> TransparencyEvaluationResult:
-        result = TransparencyTests(self.config).run(
+    ) -> EvaluationResult:
+        self._logger.info(f"Starting {tier} evaluation for mechanism: {self._mechanism}")
+
+        result = EvaluationResult(
+            mechanism=str(self._mechanism),
+            saved_at=datetime.now(timezone.utc).strftime(DATE_FORMAT),
+        )
+
+        result.randomness = RandomnessTests(self._config, tier).run(rolls)
+        result.security = SecurityTests(self._config, tier).run(rolls)
+        result.performance = PerformanceTests(self._config, tier).run(
+            mechanism=self._mechanism,
+            n_latency_requests=self._config.n_latency_requests,
+            n_startup_requests=self._config.n_startup_requests,
+            n_load_requests=self._config.n_load_requests,
+        )
+        result.transparency = TransparencyTests(self._config, tier).run(
             rolls=rolls,
-            mechanism=self.mechanism,
+            mechanism=self._mechanism,
             mapping_fn=mapping_fn,
         )
-        self._transparency_result = result
+
+        os.makedirs(os.path.dirname(os.path.abspath(self._results_file_path)), exist_ok=True)
+        with open(self._results_file_path, "w", encoding="utf-8") as f:
+            json.dump(result.to_json(), f, cls=_JsonEncoder, indent=4)
+
+        self._logger.info(f"Results saved to {self._results_file_path}")
+
         return result
-
-    def save_results(self, path: str) -> None:
-        """
-        Serialise all completed evaluation results to a JSON file.
-
-        Output schema:
-        {
-            "mechanism":   "<mechanism_id>",
-            "saved_at":    "%Y-%m-%d %H:%M:%S",
-            "randomness":  { ... } | null,
-            "security":    { ... } | null,
-            "performance": { ... } | null,
-            "transparency": { ... } | null
-        }
-        """
-        payload: dict[str, Any] = {
-            "mechanism": str(self.mechanism),
-            "saved_at": datetime.now(timezone.utc).strftime(DATE_FORMAT),
-            "randomness": (
-                dataclasses.asdict(self._randomness_result)
-                if self._randomness_result is not None
-                else None
-            ),
-            "security": (
-                dataclasses.asdict(self._security_result)
-                if self._security_result is not None
-                else None
-            ),
-            "performance": (
-                dataclasses.asdict(self._performance_result)
-                if self._performance_result is not None
-                else None
-            ),
-            "transparency": (
-                dataclasses.asdict(self._transparency_result)
-                if self._transparency_result is not None
-                else None
-            ),
-        }
-
-        os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
-        with open(path, "w", encoding="utf-8") as f:
-            json.dump(payload, f, cls=_JsonEncoder, indent=2)
-
-        self._logger.info(f"Results saved to {path}")

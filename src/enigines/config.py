@@ -26,3 +26,7 @@ class EvaluationConfig:
     # window_w: sliding window width; adaptive_threshold: max count per window.
     adaptive_window_w: int = 512
     adaptive_threshold: int = 120
+    
+    n_latency_requests: int = 1_000
+    n_startup_requests: int = 10_000
+    n_load_requests: int = 200
