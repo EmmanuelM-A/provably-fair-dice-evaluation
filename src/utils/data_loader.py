@@ -27,9 +27,9 @@ _REQUIRED_COLUMNS = [
 
 def load_roll_records_from(file: str | Path) -> List[RollRecord]:
     """
-    Loads all the random values (rolls, numbers, etc.) from the
-    provided CSV file, validates the required fields, and returns a list of
-    ValueRecord objects.
+    Loads roll records from a CSV file, validates required fields, and parses them
+    into a list of RollRecord objects. Rows with missing or invalid fields are
+    skipped, with warnings logged for any dropped rows.
     """
 
     path = Path(file)
@@ -43,9 +43,13 @@ def load_roll_records_from(file: str | Path) -> List[RollRecord]:
     if missing_columns:
         raise ValueError(f"The CSV is missing required columns: {sorted(missing_columns)}")
 
+    # client_seed may legitimately be empty for mechanisms that take no client
+    # input (e.g. drand), so exclude it from the mandatory non-empty check.
+    _must_be_non_empty = [c for c in _REQUIRED_COLUMNS if c != "client_seed"]
+
     original_len = len(df)
     df = df.dropna(subset=_REQUIRED_COLUMNS)
-    str_cols = [c for c in _REQUIRED_COLUMNS if df[c].dtype == object]
+    str_cols = [c for c in _must_be_non_empty if df[c].dtype == object]
     if str_cols:
         df = df[df[str_cols].apply(lambda col: col.str.strip() != "").all(axis=1)]
     dropped = original_len - len(df)
