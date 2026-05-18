@@ -25,7 +25,7 @@ def determinism_test(
 
     mismatches: List[int] = []
     for i, record in enumerate(rolls):
-        result = mechanism.verify(record, disclosed_server_seed=record.server_seed)
+        result = mechanism.verify(record)
         if not result.match:
             mismatches.append(i)
 
