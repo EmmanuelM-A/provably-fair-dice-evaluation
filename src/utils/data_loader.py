@@ -61,7 +61,8 @@ def load_roll_records_from(file: str | Path) -> List[RollRecord]:
         line_number += 1
         try:
             record = _parse_row(row, line_number)
-            records.append(record)
+            if record is not None:
+                records.append(record)
         except (ValueError, TypeError) as e:
             _logger.debug(f"Line {line_number} dropped during parsing: {e}")
             parse_failures += 1
@@ -77,7 +78,7 @@ def load_roll_records_from(file: str | Path) -> List[RollRecord]:
     return records
 
 
-def _parse_row(row: pd.DataFrame, line_number: int) -> RollRecord | None:
+def _parse_row(row: pd.Series, line_number: int) -> RollRecord | None:
     """
     Parse and validate a single CSV row into a RollRecord.
     Returns None if any field is missing, null, or unparseable.
@@ -86,8 +87,8 @@ def _parse_row(row: pd.DataFrame, line_number: int) -> RollRecord | None:
         outcome = int(row["outcome"])
     except ValueError:
         _logger.warning(
-            f"Line {line_number} dropped because the 'outcome' is not a " +
-            "valid integer ({row['outcome']})."
+            f"Line {line_number} dropped because the 'outcome' is not a "
+            f"valid integer ({row['outcome']})."
         )
         return None
 
@@ -95,8 +96,8 @@ def _parse_row(row: pd.DataFrame, line_number: int) -> RollRecord | None:
         raw_output = bytes.fromhex(row["raw_output"].strip())
     except ValueError:
         _logger.debug(
-            f"Line {line_number} dropped because the 'raw_output' is not " +
-            "valid hex ({row['raw_output']})."
+            f"Line {line_number} dropped because the 'raw_output' is not "
+            f"valid hex ({row['raw_output']})."
         )
         return None
 
@@ -104,8 +105,8 @@ def _parse_row(row: pd.DataFrame, line_number: int) -> RollRecord | None:
         timestamp = _parse_timestamp(row["timestamp"].strip())
     except ValueError:
         _logger.debug(
-            f"Line {line_number} dropped because the 'timestamp' could not " +
-            "be parsed ({row['timestamp']})."
+            f"Line {line_number} dropped because the 'timestamp' could not "
+            f"be parsed ({row['timestamp']})."
         )
         return None
 
@@ -120,13 +121,13 @@ def _parse_row(row: pd.DataFrame, line_number: int) -> RollRecord | None:
     )
 
 
-def _parse_timestamp(value: str) -> datetime | None:
+def _parse_timestamp(value: str) -> datetime:
     """
     Parse a timestamp string into a timezone-aware UTC datetime. With the
-    capability to handle ISO 8601 strings. If the parsed datetime has no
-    timezone, None is returned.
+    capability to handle ISO 8601 strings. Raises ValueError if the timestamp
+    has no timezone info.
     """
     dt = datetime.fromisoformat(value)
-    if dt.tzinfo:
-        return dt
-    return None
+    if dt.tzinfo is None:
+        raise ValueError(f"Timestamp '{value}' has no timezone info.")
+    return dt
