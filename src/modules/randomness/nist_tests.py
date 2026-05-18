@@ -17,7 +17,6 @@ from scipy import special, stats
 
 from src.modules.data import TestResult
 
-
 SIGNIFICANCE_LEVEL = 0.01
 
 
@@ -29,10 +28,6 @@ class NistTests(ABC):
         raise NotImplementedError()
 
 
-# ---------------------------------------------------------------------------
-# Bit conversion helper
-# ---------------------------------------------------------------------------
-
 def _to_bit_array(bit_sequence: bytes, sequence_length: int) -> np.ndarray:
     """Convert a byte sequence to a numpy array of 0s and 1s, truncated to sequence_length."""
     bits = np.unpackbits(np.frombuffer(bit_sequence, dtype=np.uint8))
@@ -42,6 +37,7 @@ def _to_bit_array(bit_sequence: bytes, sequence_length: int) -> np.ndarray:
 # ---------------------------------------------------------------------------
 # Test 1: Frequency (Monobit) Test
 # ---------------------------------------------------------------------------
+
 
 def _frequency_monobit_test(bits: np.ndarray) -> TestResult:
     """
@@ -66,6 +62,7 @@ def _frequency_monobit_test(bits: np.ndarray) -> TestResult:
 # ---------------------------------------------------------------------------
 # Test 2: Frequency within a Block
 # ---------------------------------------------------------------------------
+
 
 def _frequency_block_test(bits: np.ndarray, block_size: int = 128) -> TestResult:
     """
@@ -93,6 +90,7 @@ def _frequency_block_test(bits: np.ndarray, block_size: int = 128) -> TestResult
 # ---------------------------------------------------------------------------
 # Test 3: Runs Test
 # ---------------------------------------------------------------------------
+
 
 def _runs_test(bits: np.ndarray) -> TestResult:
     """
@@ -129,6 +127,7 @@ def _runs_test(bits: np.ndarray) -> TestResult:
 # ---------------------------------------------------------------------------
 # Test 4: Longest Run of Ones in a Block
 # ---------------------------------------------------------------------------
+
 
 def _longest_run_ones_test(bits: np.ndarray) -> TestResult:
     """
@@ -186,6 +185,7 @@ def _longest_run_ones_test(bits: np.ndarray) -> TestResult:
 # ---------------------------------------------------------------------------
 # Test 5: Binary Matrix Rank Test
 # ---------------------------------------------------------------------------
+
 
 def _binary_matrix_rank_test(bits: np.ndarray, matrix_size: int = 32) -> TestResult:
     """
@@ -256,6 +256,7 @@ def _binary_matrix_rank_test(bits: np.ndarray, matrix_size: int = 32) -> TestRes
 # Test 6: Discrete Fourier Transform (Spectral) Test
 # ---------------------------------------------------------------------------
 
+
 def _dft_spectral_test(bits: np.ndarray) -> TestResult:
     """
     NIST SP 800-22 Section 2.6.
@@ -290,6 +291,7 @@ def _dft_spectral_test(bits: np.ndarray) -> TestResult:
 # Test 7: Cumulative Sums (Cusum) Test
 # ---------------------------------------------------------------------------
 
+
 def _cumulative_sums_test(bits: np.ndarray) -> TestResult:
     """
     NIST SP 800-22 Section 2.13.
@@ -308,18 +310,22 @@ def _cumulative_sums_test(bits: np.ndarray) -> TestResult:
         z = int(np.max(np.abs(cumsum)))
 
         def _phi(t: float) -> float:
-            return stats.norm.cdf(t)
+            return float(stats.norm.cdf(t))
 
         p = 0.0
         lower = int(math.floor((-n / z + 1) / 4))
         upper = int(math.floor((n / z - 1) / 4))
         for k in range(lower, upper + 1):
-            p += _phi((4 * k + 1) * z / math.sqrt(n)) - _phi((4 * k - 1) * z / math.sqrt(n))
+            p += _phi((4 * k + 1) * z / math.sqrt(n)) - _phi(
+                (4 * k - 1) * z / math.sqrt(n)
+            )
 
         lower2 = int(math.floor((-n / z - 3) / 4))
         upper2 = int(math.floor((n / z - 1) / 4))
         for k in range(lower2, upper2 + 1):
-            p -= _phi((4 * k + 3) * z / math.sqrt(n)) - _phi((4 * k + 1) * z / math.sqrt(n))
+            p -= _phi((4 * k + 3) * z / math.sqrt(n)) - _phi(
+                (4 * k + 1) * z / math.sqrt(n)
+            )
 
         return 1.0 - p
 
@@ -342,6 +348,7 @@ def _cumulative_sums_test(bits: np.ndarray) -> TestResult:
 # ---------------------------------------------------------------------------
 # Test 8: Approximate Entropy Test
 # ---------------------------------------------------------------------------
+
 
 def _approximate_entropy_test(bits: np.ndarray, m: int = 10) -> TestResult:
     """
@@ -378,6 +385,7 @@ def _approximate_entropy_test(bits: np.ndarray, m: int = 10) -> TestResult:
 # Test 9: Serial Test
 # ---------------------------------------------------------------------------
 
+
 def _serial_test(bits: np.ndarray, m: int = 16) -> TestResult:
     """
     NIST SP 800-22 Section 2.11.
@@ -396,7 +404,7 @@ def _serial_test(bits: np.ndarray, m: int = 16) -> TestResult:
         for i in range(n):
             pattern = tuple(bits[np.arange(i, i + block_len) % n])
             counts[pattern] = counts.get(pattern, 0) + 1
-        return (2 ** block_len / n) * sum(c ** 2 for c in counts.values()) - n
+        return (2**block_len / n) * sum(c**2 for c in counts.values()) - n
 
     psi_m = _psi_sq(m)
     psi_m1 = _psi_sq(m - 1)
@@ -427,6 +435,7 @@ def _serial_test(bits: np.ndarray, m: int = 16) -> TestResult:
 # ---------------------------------------------------------------------------
 # Test 10: Random Excursions Test
 # ---------------------------------------------------------------------------
+
 
 def _random_excursions_test(bits: np.ndarray) -> TestResult:
     """
@@ -468,7 +477,7 @@ def _random_excursions_test(bits: np.ndarray) -> TestResult:
             return 1.0 - 1.0 / (2.0 * abs_x)
         if k >= 5:
             return (1.0 / (2.0 * abs_x)) * (1.0 - 1.0 / (2.0 * abs_x)) ** 4
-        return (1.0 / (4.0 * abs_x ** 2)) * (1.0 - 1.0 / (2.0 * abs_x)) ** (k - 1)
+        return (1.0 / (4.0 * abs_x**2)) * (1.0 - 1.0 / (2.0 * abs_x)) ** (k - 1)
 
     states = [-4, -3, -2, -1, 1, 2, 3, 4]
     p_values = {}
@@ -509,6 +518,7 @@ def _random_excursions_test(bits: np.ndarray) -> TestResult:
 # ---------------------------------------------------------------------------
 # Concrete subclass implementations
 # ---------------------------------------------------------------------------
+
 
 class LightEvaluationNistTests(NistTests):
     """
