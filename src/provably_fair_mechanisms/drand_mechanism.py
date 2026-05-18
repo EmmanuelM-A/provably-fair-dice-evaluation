@@ -33,7 +33,7 @@ class DrandMechanism(ProvablyFairDiceMechanism):
         self._output_file = output_file
         self.MECHANISM_ID = "drand-quicknet"
         self._logger = BaseLogger(__name__)
-    
+
     def __str__(self) -> str:
         return "Drand Quicknet Mechanism"
 
@@ -89,7 +89,9 @@ class DrandMechanism(ProvablyFairDiceMechanism):
 
     # ======================== RANDOMNESS OPERATIONS ========================
 
-    def generate_rolls(self, quantity: int, save_rolls: bool = True) -> List[RollRecord]:
+    def generate_rolls(
+        self, quantity: int, save_rolls: bool = True
+    ) -> List[RollRecord]:
         # Fetch chain info once per session. The chain hash acts as the server_seed
         # for the entire session — it is the public identifier of the randomness
         # source and does not change between rolls.
@@ -168,7 +170,7 @@ class DrandMechanism(ProvablyFairDiceMechanism):
                     "mechanism_id": self.MECHANISM_ID,
                 }
             )
-            
+
             rolls.append(
                 RollRecord(
                     server_seed=server_seed,
@@ -196,9 +198,7 @@ class DrandMechanism(ProvablyFairDiceMechanism):
 
     # ======================= VERIFICATION OPERATIONS =======================
 
-    def verify(
-        self, record: RollRecord, disclosed_server_seed: str = ""
-    ) -> VerificationResult:
+    def verify(self, record: RollRecord) -> VerificationResult:
         recomputed_outcome = -1
         is_match = False
 
@@ -245,14 +245,14 @@ class DrandMechanism(ProvablyFairDiceMechanism):
         Each beacon is chained to the one before it. The current beacon
         contains a signature field. The previous beacon's signature should
         match the current beacon's previous_signature field.
-        
+
         We fetch round N-1 and confirm:
         - beacon[N]["previous_signature"] == beacon[N-1]["signature"]
-        
+
         This proves the beacon at round N was produced as part of the
         legitimate chain and not inserted out of nowhere.
         """
-        
+
         if record.nonce <= 1:
             # Round 1 has no previous beacon to check against.
             self._logger.debug("Chain integrity check skipped for round 1.")

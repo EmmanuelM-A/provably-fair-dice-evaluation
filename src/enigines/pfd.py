@@ -21,17 +21,17 @@ class ProvablyFairDiceMechanism(ABC):
     # ========================= Randomness Generation =========================
 
     @abstractmethod
-    def generate_rolls(self, quantity: int, save_rolls: bool = True) -> List[RollRecord]:
+    def generate_rolls(
+        self, quantity: int, save_rolls: bool = True
+    ) -> List[RollRecord]:
         raise NotImplementedError()
 
     # ============================= Verification =============================
 
     @abstractmethod
-    def verify(
-        self, record: RollRecord, disclosed_server_seed: str = ""
-    ) -> VerificationResult:
+    def verify(self, record: RollRecord) -> VerificationResult:
         raise NotImplementedError()
-    
+
     @staticmethod
     def safe_compare(a: str, b: str) -> bool:
         """

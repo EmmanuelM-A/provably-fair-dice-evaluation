@@ -8,7 +8,11 @@ from dotenv import load_dotenv
 from web3 import Web3
 from web3.exceptions import ContractLogicError
 
-from src.config.configs import MAX_VALUE, REJECTION_THRESHOLD, VRF_COORDINATOR_DEPLOY_BLOCK
+from src.config.configs import (
+    MAX_VALUE,
+    REJECTION_THRESHOLD,
+    VRF_COORDINATOR_DEPLOY_BLOCK,
+)
 from src.enigines.pfd import ProvablyFairDiceMechanism
 from src.logger.base_logger import BaseLogger
 from src.utils.output_to_outcome_mapping import rejection_sampling
@@ -106,7 +110,7 @@ class ChainlinkVRFMechanism(ProvablyFairDiceMechanism):
             address=Web3.to_checksum_address(self._coordinator_address),
             abi=COORDINATOR_ABI,
         )
-    
+
     def __str__(self) -> str:
         return "Chainlink VRF v2.5 Mechanism"
 
@@ -114,13 +118,17 @@ class ChainlinkVRFMechanism(ProvablyFairDiceMechanism):
 
     def _submit_request(self) -> int:
         tx_nonce = self._w3.eth.get_transaction_count(self._sender_address, "pending")
-        tx = self._consumer.functions.requestRandomWords(False).build_transaction({
-            "from": self._sender_address,
-            "nonce": tx_nonce,
-            "gas": 200_000,
-            "gasPrice": self._w3.eth.gas_price,
-        })
-        signed = self._w3.eth.account.sign_transaction(tx, private_key=self._private_key)
+        tx = self._consumer.functions.requestRandomWords(False).build_transaction(
+            {
+                "from": self._sender_address,
+                "nonce": tx_nonce,
+                "gas": 200_000,
+                "gasPrice": self._w3.eth.gas_price,
+            }
+        )
+        signed = self._w3.eth.account.sign_transaction(
+            tx, private_key=self._private_key
+        )
         tx_hash = self._w3.eth.send_raw_transaction(signed.raw_transaction)
         receipt = self._w3.eth.wait_for_transaction_receipt(tx_hash)
 
@@ -160,7 +168,9 @@ class ChainlinkVRFMechanism(ProvablyFairDiceMechanism):
             "Check your subscription balance at vrf.chain.link."
         )
 
-    def generate_rolls(self, quantity: int, save_rolls: bool = True) -> List[RollRecord]:
+    def generate_rolls(
+        self, quantity: int, save_rolls: bool = True
+    ) -> List[RollRecord]:
         self._logger.info(f"Coordinator (server_seed): {self._coordinator_address}")
         self._logger.info(f"Consumer (client_seed): {self._consumer_address}")
 
@@ -182,25 +192,29 @@ class ChainlinkVRFMechanism(ProvablyFairDiceMechanism):
 
             timestamp = datetime.now(timezone.utc)
 
-            records.append({
-                "server_seed": self._coordinator_address,
-                "client_seed": self._consumer_address,
-                "nonce": request_id,
-                "raw_output": raw_output.hex(),
-                "outcome": outcome,
-                "timestamp": timestamp.isoformat(),
-                "mechanism_id": self.MECHANISM_ID,
-            })
+            records.append(
+                {
+                    "server_seed": self._coordinator_address,
+                    "client_seed": self._consumer_address,
+                    "nonce": request_id,
+                    "raw_output": raw_output.hex(),
+                    "outcome": outcome,
+                    "timestamp": timestamp.isoformat(),
+                    "mechanism_id": self.MECHANISM_ID,
+                }
+            )
 
-            rolls.append(RollRecord(
-                server_seed=self._coordinator_address,
-                client_seed=self._consumer_address,
-                nonce=request_id,
-                raw_output=raw_output,
-                outcome=outcome,
-                timestamp=timestamp,
-                mechanism_id=self.MECHANISM_ID,
-            ))
+            rolls.append(
+                RollRecord(
+                    server_seed=self._coordinator_address,
+                    client_seed=self._consumer_address,
+                    nonce=request_id,
+                    raw_output=raw_output,
+                    outcome=outcome,
+                    timestamp=timestamp,
+                    mechanism_id=self.MECHANISM_ID,
+                )
+            )
 
             self._logger.info(f"requestId={request_id} -> outcome={outcome}")
 
@@ -217,9 +231,7 @@ class ChainlinkVRFMechanism(ProvablyFairDiceMechanism):
 
     # ======================= VERIFICATION OPERATIONS =======================
 
-    def verify(
-        self, record: RollRecord, disclosed_server_seed: str = ""
-    ) -> VerificationResult:
+    def verify(self, record: RollRecord) -> VerificationResult:
         """
         Verifies a VRF roll by querying on-chain coordinator events for the
         given requestId (record.nonce) and confirming three properties:
@@ -284,7 +296,7 @@ class ChainlinkVRFMechanism(ProvablyFairDiceMechanism):
 
         return VerificationResult(
             record=record,
-            disclosed_server_seed=disclosed_server_seed,
+            disclosed_server_seed="",
             recomputed_outcome=recomputed_outcome,
             match=is_match,
         )

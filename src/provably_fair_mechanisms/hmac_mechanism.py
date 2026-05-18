@@ -26,7 +26,7 @@ class HMACMechanism(ProvablyFairDiceMechanism):
         self.MECHANISM_ID = "hmac-sha256"
         self._output_file = output_file
         self._logger = BaseLogger(__name__)
-    
+
     def __str__(self) -> str:
         return "HMAC-SHA256 Mechanism"
 
@@ -69,7 +69,9 @@ class HMACMechanism(ProvablyFairDiceMechanism):
 
     # ======================== RANDOMNESS OPERATIONS ========================
 
-    def generate_rolls(self, quantity: int, save_rolls: bool = True) -> List[RollRecord]:
+    def generate_rolls(
+        self, quantity: int, save_rolls: bool = True
+    ) -> List[RollRecord]:
         rolls: List[RollRecord] = []
         records = []
 
@@ -84,7 +86,9 @@ class HMACMechanism(ProvablyFairDiceMechanism):
 
             self._logger.info(f"Roll {nonce}/{quantity}...")
 
-            raw_output = self._generate_raw_output(self._client_seed, server_seed, nonce)
+            raw_output = self._generate_raw_output(
+                self._client_seed, server_seed, nonce
+            )
 
             # Map the raw bytes to a dice outcome using rejection sampling.
             outcome = rejection_sampling(raw_output=raw_output)
@@ -131,18 +135,16 @@ class HMACMechanism(ProvablyFairDiceMechanism):
 
     # ======================= VERIFICATION OPERATIONS =======================
 
-    def verify(
-        self, record: RollRecord, disclosed_server_seed: str = ""
-    ) -> VerificationResult:
+    def verify(self, record: RollRecord) -> VerificationResult:
         """
         Independently recompute the outcome from a disclosed server seed and
         confirm it matches the recorded outcome. Replicating what a user
         would do post-game/match/session to verify fairness.
-        """        
+        """
         recomputed_output = self._generate_raw_output(
-            server_seed=disclosed_server_seed,
+            server_seed=record.server_seed,
             client_seed=record.client_seed,
-            nonce=record.nonce
+            nonce=record.nonce,
         )
 
         recomputed_outcome = rejection_sampling(recomputed_output)
@@ -156,7 +158,7 @@ class HMACMechanism(ProvablyFairDiceMechanism):
 
         return VerificationResult(
             record=record,
-            disclosed_server_seed=disclosed_server_seed,
+            disclosed_server_seed=record.server_seed,
             recomputed_outcome=recomputed_outcome,
             match=is_match,
         )
