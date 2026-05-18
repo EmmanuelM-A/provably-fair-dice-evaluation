@@ -7,6 +7,7 @@ import pandas as pd
 from dotenv import load_dotenv
 from web3 import Web3
 from web3.exceptions import ContractLogicError
+from web3.types import Wei
 
 from src.config.configs import (
     MAX_VALUE,
@@ -20,20 +21,18 @@ from src.utils.types import RollRecord, VerificationResult
 
 load_dotenv()
 
+BATCH_SIZE = 100  # Sepolia callbackGasLimit cap of 2_500_000 covers ~120 words max
+
 CONSUMER_ABI = [
     {
         "name": "requestRandomWords",
         "type": "function",
         "stateMutability": "nonpayable",
-        "inputs": [{"name": "enableNativePayment", "type": "bool"}],
+        "inputs": [
+            {"name": "enableNativePayment", "type": "bool"},
+            {"name": "numWords", "type": "uint32"},
+        ],
         "outputs": [{"name": "requestId", "type": "uint256"}],
-    },
-    {
-        "name": "lastRequestId",
-        "type": "function",
-        "stateMutability": "view",
-        "inputs": [],
-        "outputs": [{"name": "", "type": "uint256"}],
     },
     {
         "name": "getRequestStatus",
@@ -43,6 +42,15 @@ CONSUMER_ABI = [
         "outputs": [
             {"name": "fulfilled", "type": "bool"},
             {"name": "randomWords", "type": "uint256[]"},
+        ],
+    },
+    {
+        # Used to extract requestId from the transaction receipt log.
+        "name": "RequestSent",
+        "type": "event",
+        "inputs": [
+            {"name": "requestId", "type": "uint256", "indexed": False},
+            {"name": "numWords", "type": "uint32", "indexed": False},
         ],
     },
 ]
@@ -116,21 +124,24 @@ class ChainlinkVRFMechanism(ProvablyFairDiceMechanism):
 
     # ======================== RANDOMNESS OPERATIONS ========================
 
-    def _submit_request(self) -> int:
+    def _submit_request(self, num_words: int) -> int:
         tx_nonce = self._w3.eth.get_transaction_count(self._sender_address, "pending")
-        tx = self._consumer.functions.requestRandomWords(False).build_transaction(
+        # Bump gas price by 50% so the tx is mined promptly on Sepolia.
+        gas_price = Wei(self._w3.eth.gas_price * 3 // 2)
+        tx = self._consumer.functions.requestRandomWords(False, num_words).build_transaction(
             {
                 "from": self._sender_address,
                 "nonce": tx_nonce,
                 "gas": 200_000,
-                "gasPrice": self._w3.eth.gas_price,
+                "gasPrice": gas_price,
             }
         )
         signed = self._w3.eth.account.sign_transaction(
             tx, private_key=self._private_key
         )
         tx_hash = self._w3.eth.send_raw_transaction(signed.raw_transaction)
-        receipt = self._w3.eth.wait_for_transaction_receipt(tx_hash)
+        self._logger.info(f"Transaction sent: {tx_hash.hex()}")
+        receipt = self._w3.eth.wait_for_transaction_receipt(tx_hash, timeout=300)
 
         if receipt["status"] != 1:
             raise ContractLogicError(
@@ -138,8 +149,24 @@ class ChainlinkVRFMechanism(ProvablyFairDiceMechanism):
                 "Check subscription balance and consumer registration."
             )
 
-        request_id = self._consumer.functions.lastRequestId().call()
-        self._logger.info(f"Request submitted: requestId={request_id}")
+        request_sent_topic = self._w3.keccak(text="RequestSent(uint256,uint32)")
+        request_id = None
+        for log in receipt["logs"]:
+            self._logger.debug(
+                f"Receipt log — address={log['address']} "
+                f"topics={[t.hex() for t in log['topics']]}"
+            )
+            if log["topics"] and log["topics"][0] == request_sent_topic:
+                request_id = int.from_bytes(log["data"][:32], "big")
+                break
+
+        if request_id is None:
+            self._logger.error(
+                f"Expected topic: {request_sent_topic.hex()}\n"
+                f"Logs in receipt: {[(log['address'], [t.hex() for t in log['topics']]) for log in receipt['logs']]}"
+            )
+            raise RuntimeError(f"RequestSent event not found in receipt. tx={tx_hash.hex()}")
+        self._logger.info(f"Request submitted: requestId={request_id}, numWords={num_words}")
         return request_id
 
     def _wait_for_fulfilment(
@@ -147,7 +174,7 @@ class ChainlinkVRFMechanism(ProvablyFairDiceMechanism):
         request_id: int,
         poll_interval: int = 5,
         max_wait: int = 600,
-    ) -> int:
+    ) -> List[int]:
         deadline = time.monotonic() + max_wait
         while time.monotonic() < deadline:
             fulfilled, random_words = self._consumer.functions.getRequestStatus(
@@ -155,8 +182,10 @@ class ChainlinkVRFMechanism(ProvablyFairDiceMechanism):
             ).call(block_identifier="latest")
 
             if fulfilled and random_words:
-                self._logger.info(f"requestId={request_id} fulfilled.")
-                return random_words[0]
+                self._logger.info(
+                    f"requestId={request_id} fulfilled ({len(random_words)} words)."
+                )
+                return random_words
 
             self._logger.debug(
                 f"requestId={request_id} pending, retrying in {poll_interval}s..."
@@ -176,47 +205,55 @@ class ChainlinkVRFMechanism(ProvablyFairDiceMechanism):
 
         rolls: List[RollRecord] = []
         records = []
+        remaining = quantity
 
-        for i in range(quantity):
-            self._logger.info(f"Roll {i + 1}/{quantity}...")
-
-            request_id = self._submit_request()
-            raw_word = self._wait_for_fulfilment(request_id)
-            raw_output = raw_word.to_bytes(32, "big")
-
-            outcome = rejection_sampling(
-                raw_output=raw_output,
-                rejection_threshold=REJECTION_THRESHOLD,
-                max_value=MAX_VALUE,
+        while remaining > 0:
+            batch = min(remaining, BATCH_SIZE)
+            self._logger.info(
+                f"Requesting batch of {batch} words "
+                f"({quantity - remaining + batch}/{quantity} total)..."
             )
 
+            request_id = self._submit_request(num_words=batch)
+            random_words = self._wait_for_fulfilment(request_id)
             timestamp = datetime.now(timezone.utc)
 
-            records.append(
-                {
-                    "server_seed": self._coordinator_address,
-                    "client_seed": self._consumer_address,
-                    "nonce": request_id,
-                    "raw_output": raw_output.hex(),
-                    "outcome": outcome,
-                    "timestamp": timestamp.isoformat(),
-                    "mechanism_id": self.MECHANISM_ID,
-                }
-            )
-
-            rolls.append(
-                RollRecord(
-                    server_seed=self._coordinator_address,
-                    client_seed=self._consumer_address,
-                    nonce=request_id,
+            for word_index, raw_word in enumerate(random_words):
+                raw_output = raw_word.to_bytes(32, "big")
+                outcome = rejection_sampling(
                     raw_output=raw_output,
-                    outcome=outcome,
-                    timestamp=timestamp,
-                    mechanism_id=self.MECHANISM_ID,
+                    rejection_threshold=REJECTION_THRESHOLD,
+                    max_value=MAX_VALUE,
                 )
-            )
+                # Encode request_id and word_index into a single unique nonce so
+                # verify() can reverse it to look up the correct on-chain request.
+                nonce = request_id * BATCH_SIZE + word_index
 
-            self._logger.info(f"requestId={request_id} -> outcome={outcome}")
+                records.append(
+                    {
+                        "server_seed": self._coordinator_address,
+                        "client_seed": self._consumer_address,
+                        "nonce": nonce,
+                        "raw_output": raw_output.hex(),
+                        "outcome": outcome,
+                        "timestamp": timestamp.isoformat(),
+                        "mechanism_id": self.MECHANISM_ID,
+                    }
+                )
+                rolls.append(
+                    RollRecord(
+                        server_seed=self._coordinator_address,
+                        client_seed=self._consumer_address,
+                        nonce=nonce,
+                        raw_output=raw_output,
+                        outcome=outcome,
+                        timestamp=timestamp,
+                        mechanism_id=self.MECHANISM_ID,
+                    )
+                )
+                self._logger.debug(f"requestId={request_id}[{word_index}] -> outcome={outcome}")
+
+            remaining -= batch
 
         df = pd.DataFrame(records)
 
@@ -243,7 +280,8 @@ class ChainlinkVRFMechanism(ProvablyFairDiceMechanism):
         coordinator produced; if the raw_output itself is untampered the outcome
         will match.
         """
-        request_id = record.nonce
+        # Decode the composite nonce back into request_id and word_index.
+        request_id = record.nonce // BATCH_SIZE
 
         # Fetch the RandomWordsRequested event for this requestId.
         requested_events = self._coordinator.events.RandomWordsRequested.get_logs(
