@@ -4,7 +4,7 @@ validating them.
 """
 
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import List
 
@@ -44,11 +44,13 @@ def load_roll_records_from(file: str | Path) -> List[RollRecord]:
         raise ValueError(f"The CSV is missing required columns: {sorted(missing_columns)}")
 
     # client_seed may legitimately be empty for mechanisms that take no client
-    # input (e.g. drand), so exclude it from the mandatory non-empty check.
+    # input (e.g. drand). Pandas reads empty CSV cells as NaN, so fill first
+    # then exclude client_seed from the dropna and non-empty checks.
+    df["client_seed"] = df["client_seed"].fillna("")
     _must_be_non_empty = [c for c in _REQUIRED_COLUMNS if c != "client_seed"]
 
     original_len = len(df)
-    df = df.dropna(subset=_REQUIRED_COLUMNS)
+    df = df.dropna(subset=_must_be_non_empty)
     str_cols = [c for c in _must_be_non_empty if df[c].dtype == object]
     if str_cols:
         df = df[df[str_cols].apply(lambda col: col.str.strip() != "").all(axis=1)]
@@ -116,7 +118,7 @@ def _parse_row(row: pd.Series, line_number: int) -> RollRecord | None:
 
     return RollRecord(
         server_seed=row["server_seed"].strip(),
-        client_seed=row["client_seed"].strip(),
+        client_seed=str(row["client_seed"]).strip(),
         nonce=int(row["nonce"]),
         raw_output=raw_output,
         outcome=outcome,
@@ -127,11 +129,10 @@ def _parse_row(row: pd.Series, line_number: int) -> RollRecord | None:
 
 def _parse_timestamp(value: str) -> datetime:
     """
-    Parse a timestamp string into a timezone-aware UTC datetime. With the
-    capability to handle ISO 8601 strings. Raises ValueError if the timestamp
-    has no timezone info.
+    Parse a timestamp string into a timezone-aware UTC datetime.
+    If the string has no timezone info, UTC is assumed.
     """
     dt = datetime.fromisoformat(value)
     if dt.tzinfo is None:
-        raise ValueError(f"Timestamp '{value}' has no timezone info.")
+        dt = dt.replace(tzinfo=timezone.utc)
     return dt

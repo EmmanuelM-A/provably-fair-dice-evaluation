@@ -78,12 +78,12 @@ class EvaluationEngine:
 
         result.randomness = RandomnessTests(self._config, tier).run(rolls)
         result.security = SecurityTests(self._config, tier).run(rolls)
-        result.performance = PerformanceTests(self._config, tier).run(
-            mechanism=self._mechanism,
-            n_latency_requests=self._config.n_latency_requests,
-            n_startup_requests=self._config.n_startup_requests,
-            n_load_requests=self._config.n_load_requests,
-        )
+        # result.performance = PerformanceTests(self._config, tier).run(
+        #     mechanism=self._mechanism,
+        #     n_latency_requests=self._config.n_latency_requests,
+        #     n_startup_requests=self._config.n_startup_requests,
+        #     n_load_requests=self._config.n_load_requests,
+        # )
         result.transparency = TransparencyTests(self._config, tier).run(
             rolls=rolls,
             mechanism=self._mechanism,

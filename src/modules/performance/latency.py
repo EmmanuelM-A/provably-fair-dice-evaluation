@@ -32,7 +32,7 @@ def measure_dice_generation_latency(
     latencies_ms: List[float] = []
     for _ in range(n_requests):
         t0 = time.perf_counter()
-        mechanism.generate_rolls(1)
+        mechanism.generate_rolls(1, save_rolls=False)  # save_rolls=False to isolate generation latency
         latencies_ms.append((time.perf_counter() - t0) * 1_000)
 
     arr = np.array(latencies_ms)

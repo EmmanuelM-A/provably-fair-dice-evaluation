@@ -35,7 +35,7 @@ mechanisms_under_evaluation = {
     },
 }
 
-SELECTED_MECHANISM = "OFF_CHAIN_HMAC" # IGNORE THIS: For demonstration, I hardcode the mechanism selection here.
+SELECTED_MECHANISM = "CHAINLINK_VRF" # IGNORE THIS: For demonstration, I hardcode the mechanism selection here.
 
 
 def main():
@@ -81,5 +81,6 @@ def main():
 if __name__ == "__main__":
     """
     Usage: python -m src.main optional[--count <quanitiy>] --tier <LIGHT|IN_DEPTH|FULL_DEPTH>
+    python -m src.main --count 1000 --tier LIGHT
     """
     main()
