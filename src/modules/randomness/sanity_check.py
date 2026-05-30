@@ -10,8 +10,7 @@ from dataclasses import dataclass
 from scipy.stats import chisquare
 
 from src.enigines.config import EvaluationConfig
-from src.provably_fair_mechanisms.baised_mechanism import BiasedMechanism
-from src.utils.types import RollRecord
+from src.enigines.pfd import ProvablyFairDiceMechanism
 
 
 @dataclass
@@ -23,6 +22,7 @@ class SanityCheckResult:
 
 
 def run_sanity_check(
+    mechanism: ProvablyFairDiceMechanism,
     configs: EvaluationConfig,
 ) -> SanityCheckResult:
     """
@@ -30,7 +30,7 @@ def run_sanity_check(
     a chi-square test to verify it is correctly rejected.
     """
     
-    rolls = BiasedMechanism(config=configs).generate_rolls(quantity=configs.distribution_min_rolls)
+    rolls = mechanism.generate_rolls(quantity=configs.distribution_min_rolls)
     
     outcomes = [r.outcome for r in rolls]
     n_rolls = len(outcomes)

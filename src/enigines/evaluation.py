@@ -76,7 +76,7 @@ class EvaluationEngine:
             saved_at=datetime.now(timezone.utc).strftime(DATE_FORMAT),
         )
 
-        result.randomness = RandomnessTests(self._config, tier).run(rolls)
+        result.randomness = RandomnessTests(self._config, tier, self._mechanism).run(rolls)
         result.security = SecurityTests(self._config, tier).run(rolls)
         # result.performance = PerformanceTests(self._config, tier).run(
         #     mechanism=self._mechanism,

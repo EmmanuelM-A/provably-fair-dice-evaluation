@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Literal, Optional
 
 from src.enigines.config import EvaluationConfig
+from src.enigines.pfd import ProvablyFairDiceMechanism
 from src.logger.base_logger import BaseLogger
 from src.modules.data import BinaryResult, TestResult
 from src.modules.randomness.distribution_tests import (
@@ -78,10 +79,14 @@ class RandomnessTests:
     """
 
     def __init__(
-        self, config: EvaluationConfig, tier: Literal["LIGHT", "IN_DEPTH", "FULL_DEPTH"]
+        self,
+        config: EvaluationConfig,
+        tier: Literal["LIGHT", "IN_DEPTH", "FULL_DEPTH"],
+        mechanism: ProvablyFairDiceMechanism,
     ) -> None:
         self.config = config
         self._tier = tier
+        self._mechanism = mechanism
         self._logger = BaseLogger(__name__)
 
     # -------------------------------------------------------------------------
@@ -98,7 +103,7 @@ class RandomnessTests:
 
     def _run_sanity_check(self, rolls: List[RollRecord]) -> SanityCheckResult:
         self._logger.info("Running framework sanity check...")
-        result = run_sanity_check(configs=self.config)
+        result = run_sanity_check(mechanism=self._mechanism, configs=self.config)
         self._logger.info(result.message)
         return result
 
