@@ -18,6 +18,12 @@ class EvaluationConfig:
     nist_light_min_bits: int = 20_000
     nist_in_depth_min_bits: int = 1_000_000
 
+    # Server seed entropy source validation (NIST SP 800-90B §3).
+    # Minimum acceptable min-entropy in bits: H_min = -log2(p_max) must meet
+    # or exceed this value. 8.0 bits is the practical floor for health testing
+    # — with the minimum 500-roll sample, this requires all seeds to be unique.
+    server_seed_min_entropy_threshold_bits: float = 8.0
+
     # Repetition Count Test (NIST SP 800-90B §4.4.1).
     # threshold_c: consecutive identical values that trigger an alarm.
     repetition_threshold_c: int = 20

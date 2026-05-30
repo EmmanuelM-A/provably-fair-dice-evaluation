@@ -1,27 +1,86 @@
 """
-Runtime entropy monitoring for ongoing randomness quality assessment.
+Runtime entropy monitoring and entropy source validation.
 
-Implements two tests drawn from NIST SP 800-90B Section 4.4:
-- repetition_count_test: Detects consecutive repeated values
-- adaptive_proportion_test: Detects over-representation within a sliding window
+Implements three checks:
+- check_server_seed_min_entropy: One-time validation of the entropy source
+  against the NIST SP 800-90B minimum min-entropy threshold (Section 3).
+- repetition_count_test: Detects consecutive repeated values (Section 4.4.1).
+- adaptive_proportion_test: Detects over-representation within a sliding
+  window (Section 4.4.2).
 
-Both tests are designed for runtime monitoring across the full sequence of
-observed outputs, not just a one-time snapshot. They scan the entire sample
-list and record every position where an alarm fires, so degradation at any
-point in the sequence is captured.
-
-Each returns a MonitorResult with:
-- alarms_triggered: total number of alarms fired
-- alarm_positions: list of sample indices where each alarm fired
-- passed: True if no alarms were triggered
+The runtime monitoring tests scan the entire sample sequence and record every
+position where an alarm fires, so degradation at any point is captured.
 
 Reference: Turan et al., "Recommendation for the Entropy Sources Used for
-Random Bit Generation", NIST SP 800-90B, January 2018, Section 4.4.
+Random Bit Generation", NIST SP 800-90B, January 2018.
 """
 
+import math
+from collections import Counter
 from dataclasses import dataclass, field
 from typing import Any, Dict, List
 
+from src.modules.data import BinaryResult
+from src.utils.types import RollRecord
+
+
+# ---------------------------------------------------------------------------
+# Entropy source validation (NIST SP 800-90B Section 3)
+# ---------------------------------------------------------------------------
+
+def check_server_seed_min_entropy(
+    records: List[RollRecord],
+    threshold_bits: float,
+) -> BinaryResult:
+    """
+    Validates that the server seed entropy source meets the minimum
+    min-entropy threshold derived from NIST SP 800-90B Section 3.
+
+    Computes empirical min-entropy from the observed server seed distribution:
+        H_min = -log2(p_max)
+    where p_max is the proportion of the most frequently observed seed value.
+    PASS confirms no single seed dominates the distribution beyond the
+    acceptable threshold; FAIL indicates the entropy source may be degraded.
+
+    The sample_bound_bits field in the result records log2(n_seeds), which is
+    the maximum H_min estimable from the available sample — the theoretical
+    minimum for cryptographic seeds is much higher (>= 128 bits) and cannot
+    be confirmed from roll records alone.
+    """
+    seeds = [r.server_seed for r in records]
+    n = len(seeds)
+    counts = Counter(seeds)
+    max_count = max(counts.values())
+    max_prob = max_count / n
+    min_entropy = -math.log2(max_prob)
+    sample_bound = math.log2(n)
+    passed = min_entropy >= threshold_bits
+    message = (
+        f"Server seed min-entropy {min_entropy:.4f} bits meets the "
+        f"threshold of {threshold_bits} bits."
+        if passed
+        else
+        f"Server seed min-entropy {min_entropy:.4f} bits is below the "
+        f"threshold of {threshold_bits} bits — entropy source may be degraded."
+    )
+    return BinaryResult(
+        test_name="server_seed_min_entropy",
+        passed=passed,
+        message=message,
+        details={
+            "n_seeds": n,
+            "n_unique_seeds": len(counts),
+            "max_observed_frequency": max_count,
+            "min_entropy_bits": round(min_entropy, 4),
+            "threshold_bits": threshold_bits,
+            "sample_bound_bits": round(sample_bound, 4),
+        },
+    )
+
+
+# ---------------------------------------------------------------------------
+# Runtime monitoring result type
+# ---------------------------------------------------------------------------
 
 @dataclass
 class MonitorResult:
