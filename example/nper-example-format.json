@@ -1,0 +1,161 @@
+{
+    "mechanismId": "string",
+
+    "bareSHA256Check": {
+        "isHmacSha256Used": "boolean",
+        "evidence": "string"
+    },
+
+    "csprngCompliance": {
+        "isCsprngUsed": "boolean",
+        "generatorName": "string",
+        "isApprovedConstruction": "boolean",
+        "evidence": "string"
+    },
+
+    "clientSeedGenerationSource": {
+        "generatedClientSide": "boolean",
+        "evidence": "string"
+    },
+
+    "commitmentTiming": {
+        "evidenceCategory": "enum: 'blockchain_timestamped' | 'third_party_certificate' | 'no_external_evidence'",
+        "evidenceDescription": "string"
+    },
+
+    "algorithmConformanceVsImplementationSecurity": {
+        "algorithmConformanceAchieved": "boolean",
+        "implementationSecurityAchieved": "boolean",
+        "implementationDetails": {
+            "seedGenerationMethod": "string",
+            "constantTimeComparisonUsed": "boolean",
+            "precomputedStateMemoryManaged": "boolean"
+        },
+        "evidence": "string"
+    },
+
+    "attackVectorClassification": {
+        "dishonestOperator": {
+            "resisted": "boolean",
+            "reasoning": "string"
+        },
+        "maliciousPlayer": {
+            "resisted": "boolean",
+            "reasoning": "string"
+        },
+        "externalEavesdropper": {
+            "resisted": "boolean",
+            "reasoning": "string"
+        },
+        "compromisedOracle": {
+            "resisted": "boolean",
+            "reasoning": "string"
+        }
+    },
+
+    "vrfQinpUniquenessEnforcement": {
+        "applicable": "boolean",
+        "reqIdContractControlled": "boolean",
+        "preseedComputedOnChain": "boolean",
+        "blockHashReferencesFutureBlock": "boolean",
+        "evidence": "string"
+    },
+
+    "drandFutureRoundCommitmentStrategy": {
+        "applicable": "boolean",
+        "roundsTested": "integer",
+        "commitmentAnchorMandatory": "boolean",
+        "contractPreventsEarlySettlement": "boolean",
+        "failedRoundsCount": "integer",
+        "evidence": "string"
+    },
+
+    "dkgPhaseIntegrity": {
+        "applicable": "boolean",
+        "keyConsistency": {
+            "allNodesAgreePostResharing": "boolean",
+            "nodesChecked": "integer",
+            "evidence": "string"
+        },
+        "resharingRecency": {
+            "latestResharingTimestamp": "string",
+            "acceptedThresholdDays": "integer",
+            "withinThreshold": "boolean"
+        }
+    },
+
+    "predictionResistance": {
+        "reseedingFrequency": "enum: 'per_round' | 'per_session' | 'once_at_startup'",
+        "entropySourceQuality": "enum: 'strong' | 'weak'",
+        "entropySourceIndependentOfPrngState": "boolean",
+        "evidence": "string"
+    },
+
+    "backwardsForwardStateInference": {
+        "usesOneOffSeedsPerRound": "boolean",
+        "ifSharedPrngStateUpdateFormallyDocumented": "boolean | null",
+        "ifSharedPrngStateUpdateProvablyOneWay": "boolean | null",
+        "evidence": "string"
+    },
+
+    "nonceManagement": {
+        "initialisesAtZero": "boolean",
+        "incrementsByOne": "boolean",
+        "noResetWithoutSeedRotation": "boolean",
+        "overflowPolicyDocumented": "boolean",
+        "overflowPolicyDescription": "string | null",
+        "evidence": "string"
+    },
+
+    "clientSeedRotationBehaviour": {
+        "defaultSeedSource": "enum: 'client_side' | 'server_side'",
+        "rotationGuidanceAvailability": "enum: 'none' | 'optional' | 'present' | 'mandatory'",
+        "rotationRecommendation": "enum: 'per_round' | 'per_session' | 'not_specified'",
+        "evidence": "string"
+    },
+
+    "vrfSecurityAssessment": {
+        "applicable": "boolean",
+        "outputManipulationResistance": {
+            "enforced": "boolean",
+            "mechanism": "string"
+        },
+        "queryInputUniqueness": {
+            "status": "enum: 'contract_enforced' | 'user_input_dependent' | 'unspecified'",
+            "description": "string"
+        },
+        "selectiveNonFulfilmentResistance": {
+            "mitigated": "boolean",
+            "mitigationMethod": "string | null"
+        },
+        "oracleKeySecurity": {
+            "cryptographicallyEnforced": "boolean",
+            "description": "string"
+        }
+    },
+
+    "verificationTransparencyScores": {
+        "algorithmDisclosure": {
+            "score": "float: 0.0 | 0.5 | 1.0",
+            "justification": "string"
+        },
+        "entropySourceDisclosure": {
+            "score": "float: 0.0 | 0.5 | 1.0",
+            "justification": "string"
+        },
+        "historicalAuditabilityWindow": {
+            "score": "float: 0.0 | 0.5 | 1.0",
+            "justification": "string"
+        },
+        "verificationToolAvailability": {
+            "inPlatformScore": "float: 0.0 | 0.5 | 1.0",
+            "independentThirdPartyScore": "float: 0.0 | 0.5 | 1.0",
+            "justification": "string"
+        },
+        "verificationFriction": {
+            "expertPathScore": "float: 0.0 | 0.5 | 1.0",
+            "nonExpertPathScore": "float: 0.0 | 0.5 | 1.0",
+            "justification": "string"
+        }
+    }
+}
