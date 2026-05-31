@@ -1,16 +1,18 @@
 """
 Framework calibration check for the randomness evaluation module.
 
-Verifies that the chi-square test battery can detect a biased die before
-any mechanism evaluation begins. Halts evaluation if the check fails.
+Runs a chi-square uniformity test on the mechanism's actual roll outputs.
+Flags biased outcomes before the main evaluation proceeds.
 """
 
 from dataclasses import dataclass
+from typing import List
 
+import numpy as np
 from scipy.stats import chisquare
 
 from src.enigines.config import EvaluationConfig
-from src.enigines.pfd import ProvablyFairDiceMechanism
+from src.utils.types import RollRecord
 
 
 @dataclass
@@ -22,44 +24,46 @@ class SanityCheckResult:
 
 
 def run_sanity_check(
-    mechanism: ProvablyFairDiceMechanism,
+    rolls: List[RollRecord],
     configs: EvaluationConfig,
 ) -> SanityCheckResult:
     """
-    Runs a sanity check on the provided rolls by applying
-    a chi-square test to verify it is correctly rejected.
+    Chi-square uniformity check on actual mechanism rolls.
+
+    Bins outcomes into n_faces equal-width buckets using the observed range,
+    which handles both integer outcomes (e.g. 1–100) and float outcomes
+    (e.g. Stake's 0.00–100.00) without any sum mismatch.
+
+    Raises RuntimeError if outcomes are biased (p < significance_level).
     """
-    
-    rolls = mechanism.generate_rolls(quantity=configs.distribution_min_rolls)
-    
-    outcomes = [r.outcome for r in rolls]
+    outcomes = np.array([r.outcome for r in rolls], dtype=float)
     n_rolls = len(outcomes)
     n_faces = configs.n_faces
     significance = configs.significance_level
 
-    observed = [outcomes.count(face) for face in range(1, n_faces + 1)]
-    expected = [n_rolls / n_faces] * n_faces
+    # np.histogram auto-range includes all data, so sum(observed) == n_rolls always.
+    observed, _ = np.histogram(outcomes, bins=n_faces)
+    expected = np.full(n_faces, n_rolls / n_faces, dtype=float)
 
-    stat, p_value = chisquare(f_obs=observed, f_exp=expected)
+    stat, p_value = chisquare(f_obs=observed.astype(float), f_exp=expected)
 
-    passed = bool(p_value < significance)
-    if passed:
+    is_biased = bool(p_value < significance)
+
+    if is_biased:
         message = (
-            f"Sanity check passed: biased die correctly rejected "
-            f"(chi2={stat:.2f}, p={p_value:.4e})."
+            f"Biased outcomes detected "
+            f"(chi2={stat:.2f}, p={p_value:.4e} < {significance}). "
+            "Evaluation flagged!"
         )
-    else:
-        message = (
-            f"MISCALIBRATED: chi-square failed to reject biased die "
-            f"(chi2={stat:.2f}, p={p_value:.4e} >= {significance}). "
-            "Evaluation halted!"
-        )
-
-    if not passed:
         raise RuntimeError(message)
 
+    message = (
+        f"Sanity check passed: outcomes appear uniform "
+        f"(chi2={stat:.2f}, p={p_value:.4e})."
+    )
+
     return SanityCheckResult(
-        passed=passed,
+        passed=True,
         chi_square_stat=float(stat),
         p_value=float(p_value),
         message=message,

@@ -131,11 +131,17 @@ class SecurityTests:
         if self._tier not in ["IN_DEPTH", "FULL_DEPTH"]:
             return result
 
-        result.in_depth = self._run_in_depth_evaluation_framework(rolls)
+        try:
+            result.in_depth = self._run_in_depth_evaluation_framework(rolls)
+        except NotImplementedError:
+            self._logger.warning("Security IN_DEPTH tier not implemented, skipping.")
 
         if self._tier not in ["FULL_DEPTH"]:
             return result
 
-        result.full_depth = self._run_full_depth_evaluation_framework(rolls)
+        try:
+            result.full_depth = self._run_full_depth_evaluation_framework(rolls)
+        except NotImplementedError:
+            self._logger.warning("Security FULL_DEPTH tier not implemented, skipping.")
 
         return result

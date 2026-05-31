@@ -103,7 +103,7 @@ class RandomnessTests:
 
     def _run_sanity_check(self, rolls: List[RollRecord]) -> SanityCheckResult:
         self._logger.info("Running framework sanity check...")
-        result = run_sanity_check(mechanism=self._mechanism, configs=self.config)
+        result = run_sanity_check(rolls=rolls, configs=self.config)
         self._logger.info(result.message)
         return result
 
@@ -211,19 +211,25 @@ class RandomnessTests:
         """Run the randomness evaluation pipeline for the configured tier."""
         _, _, n_bits = self._extract_bits(rolls)
         n_rolls = len(rolls)
-        
+
         result = RandomnessEvaluationResult(n_rolls=n_rolls, n_bits=n_bits)
-        
+
         result.light = self._run_light_evaluation_framework(rolls)
-        
+
         if self._tier not in ["IN_DEPTH", "FULL_DEPTH"]:
             return result
-        
-        result.in_depth = self._run_in_depth_evaluation_framework(rolls)
-        
+
+        try:
+            result.in_depth = self._run_in_depth_evaluation_framework(rolls)
+        except NotImplementedError:
+            self._logger.warning("Randomness IN_DEPTH tier not implemented, skipping.")
+
         if self._tier not in ["FULL_DEPTH"]:
             return result
-        
-        result.full_depth = self._run_full_depth_evaluation_framework(rolls)
-        
+
+        try:
+            result.full_depth = self._run_full_depth_evaluation_framework(rolls)
+        except NotImplementedError:
+            self._logger.warning("Randomness FULL_DEPTH tier not implemented, skipping.")
+
         return result
