@@ -142,10 +142,11 @@ def _longest_run_ones_test(bits: np.ndarray, configs: EvaluationConfig) -> TestR
     m = 8
     num_blocks = n // m
 
-    # Theoretical probabilities for M=8 (from NIST SP 800-22, Table 1)
-    # Categories: v <= 1, v=2, v=3, v=4, v=5, v >= 6
-    pi = [0.2148, 0.3672, 0.2305, 0.1284, 0.0527, 0.0064]
-    k = 5  # number of degrees of freedom = len(pi) - 1
+    # NIST SP 800-22 Table 1: for M=8, K=3 (4 categories).
+    # Categories: v <= 1, v=2, v=3, v >= 4
+    # Exact values: 55/256, 94/256, 59/256, 48/256
+    pi = [0.2148, 0.3672, 0.2305, 0.1875]
+    k = 3  # degrees of freedom = len(pi) - 1
 
     # Count longest run of ones in each block
     blocks = bits[: num_blocks * m].reshape(num_blocks, m)
@@ -161,15 +162,17 @@ def _longest_run_ones_test(bits: np.ndarray, configs: EvaluationConfig) -> TestR
                 current_run = 0
         longest_runs.append(max_run)
 
-    # Map run lengths to categories
+    # Map run lengths to 4 categories
     counts = np.zeros(k + 1, dtype=float)
     for run in longest_runs:
         if run <= 1:
             counts[0] += 1
-        elif run <= 5:
-            counts[run - 1] += 1
+        elif run == 2:
+            counts[1] += 1
+        elif run == 3:
+            counts[2] += 1
         else:
-            counts[5] += 1
+            counts[3] += 1
 
     expected = np.array(pi) * num_blocks
     chi_sq = float(np.sum((counts - expected) ** 2 / expected))

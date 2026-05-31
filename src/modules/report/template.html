@@ -1,0 +1,1134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ mechanism }} — Evaluation Report</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
+  <style>
+    body { background: #f8f9fa; }
+    #sidebar {
+      position: sticky;
+      top: 1rem;
+      max-height: calc(100vh - 2rem);
+      overflow-y: auto;
+    }
+    #sidebar .nav-link { color: #495057; font-size: 0.85rem; padding: 0.2rem 0.75rem; }
+    #sidebar .nav-link:hover, #sidebar .nav-link.active { color: #0d6efd; }
+    #sidebar .nav-link.sub { padding-left: 1.4rem; font-size: 0.78rem; }
+    .section-heading {
+      border-left: 4px solid #0d6efd;
+      padding-left: 0.75rem;
+      margin: 2rem 0 1rem;
+    }
+    .sub-heading {
+      border-left: 3px solid #6ea8fe;
+      padding-left: 0.6rem;
+      margin: 1.5rem 0 0.75rem;
+      font-size: 1rem;
+    }
+    .stat-card { border-left: 4px solid #0d6efd; }
+    .chart-container { position: relative; height: 260px; }
+    .chart-container-lg { position: relative; height: 360px; }
+    .param-table td, .param-table th { font-size: 0.8rem; }
+    .enum-tag {
+      display: inline-block;
+      padding: 0.2em 0.55em;
+      border-radius: 0.3rem;
+      font-size: 0.78rem;
+      font-weight: 600;
+      background: #e9ecef;
+      color: #495057;
+    }
+    .nper-accordion .accordion-button { font-size: 0.9rem; }
+    .attack-grid td { font-size: 0.82rem; vertical-align: middle; }
+    .p-val { font-family: monospace; font-size: 0.85rem; }
+  </style>
+</head>
+<body>
+
+{# ── Macros ─────────────────────────────────────────────────────────────── #}
+{% macro badge(passed, true_label="PASS", false_label="FAIL") %}
+  <span class="badge {% if passed %}bg-success{% else %}bg-danger{% endif %}">
+    {{ true_label if passed else false_label }}
+  </span>
+{% endmacro %}
+
+{% macro na_badge() %}<span class="badge bg-secondary">N/A</span>{% endmacro %}
+
+{% macro bool_badge(value, true_label="Yes", false_label="No") %}
+  {% if value is none or value == "null" %}
+    <span class="badge bg-secondary">—</span>
+  {% elif value %}
+    <span class="badge bg-success">{{ true_label }}</span>
+  {% else %}
+    <span class="badge bg-danger">{{ false_label }}</span>
+  {% endif %}
+{% endmacro %}
+
+{% macro enum_tag(value) %}<span class="enum-tag">{{ value }}</span>{% endmacro %}
+
+{% macro binary_check_card(check, title) %}
+<div class="card mb-3">
+  <div class="card-header d-flex justify-content-between align-items-center py-2">
+    <span class="fw-semibold">{{ title }}</span>
+    {{ badge(check.passed) }}
+  </div>
+  <div class="card-body py-2">
+    <p class="mb-1 text-muted small">{{ check.message }}</p>
+    {% if check.details %}
+    <table class="table table-sm param-table mb-0">
+      <tbody>
+        {% for k, v in check.details.items() %}
+        <tr><th>{{ k }}</th><td>{{ v }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+  </div>
+</div>
+{% endmacro %}
+
+{% macro p_value_table(tests, sig) %}
+<table class="table table-sm table-hover">
+  <thead class="table-light">
+    <tr>
+      <th>Test</th>
+      <th class="text-end">P-value</th>
+      <th class="text-end">Threshold</th>
+      <th class="text-center">Result</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for t in tests %}
+    <tr>
+      <td>{{ t.name }}</td>
+      <td class="text-end p-val">{{ "%.6f" | format(t.p_value) }}</td>
+      <td class="text-end p-val">{{ sig }}</td>
+      <td class="text-center">{{ badge(t.passed) }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endmacro %}
+
+{# ── Header ──────────────────────────────────────────────────────────────── #}
+<nav class="navbar navbar-dark bg-dark px-4 py-3">
+  <span class="navbar-brand mb-0 h5">{{ mechanism }}</span>
+  <div class="d-flex gap-3 align-items-center">
+    <span class="badge bg-primary fs-6">{{ tier }}</span>
+    <span class="text-light small">{{ generated_at }}</span>
+  </div>
+</nav>
+
+<div class="container-fluid">
+  <div class="row">
+
+    {# ── Sidebar ─────────────────────────────────────────────────────────── #}
+    <div class="col-lg-2 d-none d-lg-block py-3" id="sidebar">
+      <nav class="nav flex-column">
+        <a class="nav-link" href="#summary">Summary</a>
+        <a class="nav-link" href="#randomness">Randomness</a>
+        <a class="nav-link sub" href="#rand-sanity">Sanity Check</a>
+        <a class="nav-link sub" href="#rand-dist">Distribution Tests</a>
+        <a class="nav-link sub" href="#rand-entropy">Seed Entropy</a>
+        <a class="nav-link sub" href="#rand-nist-light">NIST Light</a>
+        {% if randomness.nist_in_depth %}
+        <a class="nav-link sub" href="#rand-nist-depth">NIST In-Depth</a>
+        {% endif %}
+        {% if randomness.entropy_monitoring %}
+        <a class="nav-link sub" href="#rand-monitor">Entropy Monitoring</a>
+        {% endif %}
+        <a class="nav-link" href="#security">Security</a>
+        <a class="nav-link" href="#transparency">Transparency</a>
+        {% if nper %}
+        <a class="nav-link" href="#nper">Non-Programmable</a>
+        {% endif %}
+        <a class="nav-link" href="#scorecard">Scorecard</a>
+      </nav>
+    </div>
+
+    {# ── Main content ─────────────────────────────────────────────────────── #}
+    <main class="col-lg-10 py-4 px-4">
+
+      {# ════════════════════════════════════════════════════════════════════ #}
+      {# Section 0: Summary                                                  #}
+      {# ════════════════════════════════════════════════════════════════════ #}
+      <h2 class="section-heading" id="summary">Summary</h2>
+      <div class="row g-3 mb-4">
+
+        {% if randomness %}
+        <div class="col-sm-6 col-xl-3">
+          <div class="card stat-card h-100">
+            <div class="card-body">
+              <h6 class="text-muted mb-1">Randomness</h6>
+              <div class="fs-5 fw-bold">{{ randomness.stats.n_rolls }} rolls</div>
+              <div class="small text-muted">{{ randomness.stats.n_bits }} bits</div>
+              {% if randomness.nist_light %}
+                {% set nist_pass = randomness.nist_light | selectattr('passed') | list | length %}
+                {% set nist_total = randomness.nist_light | length %}
+                <div class="mt-2">NIST Light: {{ nist_pass }}/{{ nist_total }} {{ badge(nist_pass == nist_total) }}</div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+        {% if security %}
+        <div class="col-sm-6 col-xl-3">
+          <div class="card stat-card h-100" style="border-left-color:#198754">
+            <div class="card-body">
+              <h6 class="text-muted mb-1">Security</h6>
+              {% if security.light %}
+                {% set sec_checks = [security.light.seed_reuse.passed, security.light.nonce_presence.passed, security.light.nonce_uniqueness.passed] %}
+                {% set sec_pass = sec_checks | select | list | length %}
+                <div class="fs-5 fw-bold">{{ sec_pass }}/3 checks</div>
+                <div class="mt-2">{{ badge(sec_pass == 3) }}</div>
+              {% else %}
+                <div class="text-muted small">No data</div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+        {% if transparency %}
+        <div class="col-sm-6 col-xl-3">
+          <div class="card stat-card h-100" style="border-left-color:#fd7e14">
+            <div class="card-body">
+              <h6 class="text-muted mb-1">Transparency</h6>
+              {% if transparency.light %}
+                {% set tr_checks = [transparency.light.determinism.passed, transparency.light.mapping_reproducibility.passed] %}
+                {% set tr_pass = tr_checks | select | list | length %}
+                <div class="fs-5 fw-bold">{{ tr_pass }}/2 checks</div>
+                <div class="mt-2">{{ badge(tr_pass == 2) }}</div>
+              {% else %}
+                <div class="text-muted small">No data</div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+        {% if nper %}
+        <div class="col-sm-6 col-xl-3">
+          <div class="card stat-card h-100" style="border-left-color:#6f42c1">
+            <div class="card-body">
+              <h6 class="text-muted mb-1">Non-Programmable</h6>
+              <div class="fs-5 fw-bold">{{ nper.mechanismId }}</div>
+              {% if nper.verificationTransparencyScores %}
+                {% set avg = nper.transparency_chart_data.scores | sum / nper.transparency_chart_data.scores | length %}
+                <div class="small mt-1">Avg transparency score: {{ "%.2f" | format(avg) }}</div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+      </div>
+
+      {# ════════════════════════════════════════════════════════════════════ #}
+      {# Section 1: Randomness                                               #}
+      {# ════════════════════════════════════════════════════════════════════ #}
+      {% if randomness %}
+      <h2 class="section-heading" id="randomness">Randomness Evaluation</h2>
+
+      <div class="row g-2 mb-3">
+        <div class="col-auto">
+          <span class="badge bg-light text-dark border">Rolls: {{ randomness.stats.n_rolls }}</span>
+        </div>
+        <div class="col-auto">
+          <span class="badge bg-light text-dark border">Bits: {{ randomness.stats.n_bits }}</span>
+        </div>
+      </div>
+
+      {# 1.1 Sanity Check #}
+      {% if randomness.sanity_check %}
+      <h3 class="sub-heading" id="rand-sanity">Sanity Check</h3>
+      <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center py-2">
+          <span class="fw-semibold">Chi-Square Biased Die Rejection</span>
+          {{ badge(randomness.sanity_check.passed) }}
+        </div>
+        <div class="card-body py-2">
+          <p class="mb-2 text-muted small">{{ randomness.sanity_check.message }}</p>
+          <div class="row g-3">
+            <div class="col-auto">
+              <div class="text-muted small">χ² statistic</div>
+              <div class="fw-semibold">{{ randomness.sanity_check.chi_square_stat }}</div>
+            </div>
+            <div class="col-auto">
+              <div class="text-muted small">P-value</div>
+              <div class="fw-semibold p-val">{{ "%.6f" | format(randomness.sanity_check.p_value) }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      {# 1.2 Distribution Tests + histogram #}
+      <h3 class="sub-heading" id="rand-dist">Distribution Tests</h3>
+      <div class="row g-3 mb-3">
+        {% for t in randomness.distribution_tests %}
+        <div class="col-md-6">
+          <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center py-2">
+              <span class="fw-semibold">{{ t.name }}</span>
+              {{ badge(t.passed) }}
+            </div>
+            <div class="card-body py-2">
+              <div class="row g-2 mb-2">
+                <div class="col-auto">
+                  <div class="text-muted small">P-value</div>
+                  <div class="fw-semibold p-val">{{ "%.6f" | format(t.p_value) }}</div>
+                </div>
+                <div class="col-auto">
+                  <div class="text-muted small">Threshold</div>
+                  <div class="fw-semibold p-val">{{ significance_level }}</div>
+                </div>
+              </div>
+              {% if t.parameters %}
+              <details class="small text-muted">
+                <summary>Parameters</summary>
+                <table class="table table-sm param-table mt-1">
+                  <tbody>
+                    {% for k, v in t.parameters.items() %}
+                    <tr><th>{{ k }}</th><td>{{ v }}</td></tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </details>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+
+      <div class="card mb-4">
+        <div class="card-header py-2 fw-semibold">Roll Outcome Distribution</div>
+        <div class="card-body">
+          <div class="chart-container">
+            <canvas id="histogramChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      {# 1.3 Server Seed Entropy #}
+      {% if randomness.server_seed_entropy %}
+      <h3 class="sub-heading" id="rand-entropy">Server Seed Min-Entropy</h3>
+      {{ binary_check_card(randomness.server_seed_entropy, "Server Seed Min-Entropy (NIST SP 800-90B §3)") }}
+      {% endif %}
+
+      {# 1.4 NIST Light #}
+      {% if randomness.nist_light %}
+      <h3 class="sub-heading" id="rand-nist-light">NIST SP 800-22 — Light Tier (Tests 1–7)</h3>
+      <div class="card mb-3">
+        <div class="card-body p-0">
+          {{ p_value_table(randomness.nist_light, significance_level) }}
+        </div>
+      </div>
+      <div class="card mb-4">
+        <div class="card-header py-2 fw-semibold">P-value Distribution — NIST Light</div>
+        <div class="card-body">
+          <div class="chart-container">
+            <canvas id="nistLightChart"></canvas>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      {# 1.5 NIST In-Depth #}
+      {% if randomness.nist_in_depth %}
+      <h3 class="sub-heading" id="rand-nist-depth">NIST SP 800-22 — In-Depth Tier (Tests 8–10)</h3>
+      <div class="card mb-3">
+        <div class="card-body p-0">
+          {{ p_value_table(randomness.nist_in_depth, significance_level) }}
+        </div>
+      </div>
+      <div class="card mb-4">
+        <div class="card-header py-2 fw-semibold">P-value Distribution — NIST In-Depth</div>
+        <div class="card-body">
+          <div class="chart-container">
+            <canvas id="nistDepthChart"></canvas>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      {# 1.6 Entropy Monitoring #}
+      {% if randomness.entropy_monitoring %}
+      <h3 class="sub-heading" id="rand-monitor">Entropy Monitoring (NIST SP 800-90B)</h3>
+      <div class="row g-3 mb-4">
+
+        <div class="col-md-6">
+          <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center py-2">
+              <span class="fw-semibold">Repetition Count Test (§4.4.1)</span>
+              {{ badge(randomness.entropy_monitoring.repetition_count.passed) }}
+            </div>
+            <div class="card-body py-2">
+              <div class="row g-2">
+                <div class="col-auto">
+                  <div class="text-muted small">Alarms triggered</div>
+                  <div class="fw-semibold {% if randomness.entropy_monitoring.repetition_count.alarms_triggered > 0 %}text-danger{% else %}text-success{% endif %}">
+                    {{ randomness.entropy_monitoring.repetition_count.alarms_triggered }}
+                  </div>
+                </div>
+              </div>
+              <details class="small text-muted mt-2">
+                <summary>Parameters</summary>
+                <table class="table table-sm param-table mt-1">
+                  <tbody>
+                    {% for k, v in randomness.entropy_monitoring.repetition_count.parameters.items() %}
+                    <tr><th>{{ k }}</th><td>{{ v }}</td></tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </details>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center py-2">
+              <span class="fw-semibold">Adaptive Proportion Test (§4.4.2)</span>
+              {{ badge(randomness.entropy_monitoring.adaptive_proportion.passed) }}
+            </div>
+            <div class="card-body py-2">
+              <div class="row g-2">
+                <div class="col-auto">
+                  <div class="text-muted small">Alarms triggered</div>
+                  <div class="fw-semibold {% if randomness.entropy_monitoring.adaptive_proportion.alarms_triggered > 0 %}text-danger{% else %}text-success{% endif %}">
+                    {{ randomness.entropy_monitoring.adaptive_proportion.alarms_triggered }}
+                  </div>
+                </div>
+              </div>
+              <details class="small text-muted mt-2">
+                <summary>Parameters</summary>
+                <table class="table table-sm param-table mt-1">
+                  <tbody>
+                    {% for k, v in randomness.entropy_monitoring.adaptive_proportion.parameters.items() %}
+                    <tr><th>{{ k }}</th><td>{{ v }}</td></tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </details>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      {% endif %}
+
+      {% endif %}{# end randomness #}
+
+      {# ════════════════════════════════════════════════════════════════════ #}
+      {# Section 2: Security                                                 #}
+      {# ════════════════════════════════════════════════════════════════════ #}
+      {% if security %}
+      <h2 class="section-heading" id="security">Security Evaluation</h2>
+
+      <div class="mb-3">
+        <span class="badge bg-light text-dark border">Rolls evaluated: {{ security.stats.n_rolls }}</span>
+      </div>
+
+      {% if security.light %}
+      {{ binary_check_card(security.light.seed_reuse, "Seed Reuse") }}
+      {{ binary_check_card(security.light.nonce_presence, "Nonce Presence") }}
+      {{ binary_check_card(security.light.nonce_uniqueness, "Nonce Uniqueness") }}
+
+      <div class="card mb-4">
+        <div class="card-header py-2 fw-semibold">Nonce Min-Entropy</div>
+        <div class="card-body py-2">
+          <div class="fs-4 fw-bold">{{ security.light.nonce_min_entropy }} <span class="fs-6 text-muted fw-normal">bits</span></div>
+        </div>
+      </div>
+      {% endif %}
+
+      {% endif %}
+
+      {# ════════════════════════════════════════════════════════════════════ #}
+      {# Section 3: Transparency                                             #}
+      {# ════════════════════════════════════════════════════════════════════ #}
+      {% if transparency %}
+      <h2 class="section-heading" id="transparency">Transparency Evaluation</h2>
+
+      <div class="mb-3">
+        <span class="badge bg-light text-dark border">Rolls evaluated: {{ transparency.stats.n_rolls }}</span>
+      </div>
+
+      {% if transparency.light %}
+      {{ binary_check_card(transparency.light.determinism, "Determinism (End-to-End Re-derivation)") }}
+      {{ binary_check_card(transparency.light.mapping_reproducibility, "Outcome Mapping Reproducibility") }}
+      {% endif %}
+
+      {% endif %}
+
+      {# ════════════════════════════════════════════════════════════════════ #}
+      {# Section 4: Non-Programmable                                         #}
+      {# ════════════════════════════════════════════════════════════════════ #}
+      {% if nper %}
+      <h2 class="section-heading" id="nper">Non-Programmable Checks</h2>
+      <p class="text-muted small mb-3">Mechanism: <code>{{ nper.mechanismId }}</code></p>
+
+      <div class="accordion nper-accordion mb-4" id="nperAccordion">
+
+        {# 2.1 Bare SHA-256 #}
+        {% if nper.bareSHA256Check %}
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#nper-sha256">
+              Bare SHA-256 Check
+              <span class="ms-auto me-3">
+                {{ badge(nper.bareSHA256Check.isHmacSha256Used, "HMAC-SHA256", "Bare SHA-256") }}
+              </span>
+            </button>
+          </h2>
+          <div id="nper-sha256" class="accordion-collapse collapse">
+            <div class="accordion-body">
+              <table class="table table-sm">
+                <tbody>
+                  <tr><th>HMAC-SHA256 used</th><td>{{ bool_badge(nper.bareSHA256Check.isHmacSha256Used) }}</td></tr>
+                  <tr><th>Evidence</th><td class="small">{{ nper.bareSHA256Check.evidence }}</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+        {# 2.2 CSPRNG Compliance #}
+        {% if nper.csprngCompliance %}
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#nper-csprng">
+              CSPRNG Compliance
+              <span class="ms-auto me-3">
+                {{ badge(nper.csprngCompliance.isCsprngUsed) }}
+              </span>
+            </button>
+          </h2>
+          <div id="nper-csprng" class="accordion-collapse collapse">
+            <div class="accordion-body">
+              <table class="table table-sm">
+                <tbody>
+                  <tr><th>CSPRNG used</th><td>{{ bool_badge(nper.csprngCompliance.isCsprngUsed) }}</td></tr>
+                  <tr><th>Generator name</th><td><code>{{ nper.csprngCompliance.generatorName }}</code></td></tr>
+                  <tr><th>Approved construction</th><td>{{ bool_badge(nper.csprngCompliance.isApprovedConstruction) }}</td></tr>
+                  <tr><th>Evidence</th><td class="small">{{ nper.csprngCompliance.evidence }}</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+        {# 2.3 Client Seed Generation Source #}
+        {% if nper.clientSeedGenerationSource %}
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#nper-client-seed">
+              Client Seed Generation Source
+              <span class="ms-auto me-3">
+                {{ badge(nper.clientSeedGenerationSource.generatedClientSide, "Client-side", "Server-side") }}
+              </span>
+            </button>
+          </h2>
+          <div id="nper-client-seed" class="accordion-collapse collapse">
+            <div class="accordion-body">
+              <table class="table table-sm">
+                <tbody>
+                  <tr><th>Generated client-side</th><td>{{ bool_badge(nper.clientSeedGenerationSource.generatedClientSide) }}</td></tr>
+                  <tr><th>Evidence</th><td class="small">{{ nper.clientSeedGenerationSource.evidence }}</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+        {# 2.4 Commitment Timing #}
+        {% if nper.commitmentTiming %}
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#nper-commitment">
+              Commitment Timing
+              <span class="ms-auto me-3">
+                {% set cat = nper.commitmentTiming.evidenceCategory %}
+                {% if cat == "blockchain_timestamped" %}
+                  <span class="badge bg-success">Blockchain Timestamped</span>
+                {% elif cat == "third_party_certificate" %}
+                  <span class="badge bg-warning text-dark">Third-Party Certificate</span>
+                {% else %}
+                  <span class="badge bg-danger">No External Evidence</span>
+                {% endif %}
+              </span>
+            </button>
+          </h2>
+          <div id="nper-commitment" class="accordion-collapse collapse">
+            <div class="accordion-body">
+              <table class="table table-sm">
+                <tbody>
+                  <tr><th>Evidence category</th><td>{{ enum_tag(nper.commitmentTiming.evidenceCategory) }}</td></tr>
+                  <tr><th>Description</th><td class="small">{{ nper.commitmentTiming.evidenceDescription }}</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+        {# 2.5 Algorithm Conformance vs Implementation Security #}
+        {% if nper.algorithmConformanceVsImplementationSecurity %}
+        {% set acis = nper.algorithmConformanceVsImplementationSecurity %}
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#nper-acis">
+              Algorithm Conformance vs Implementation Security
+              <span class="ms-auto me-3 d-flex gap-1">
+                {{ badge(acis.algorithmConformanceAchieved, "Conformance", "No Conformance") }}
+                {{ badge(acis.implementationSecurityAchieved, "Secure Impl.", "Insecure Impl.") }}
+              </span>
+            </button>
+          </h2>
+          <div id="nper-acis" class="accordion-collapse collapse">
+            <div class="accordion-body">
+              <table class="table table-sm mb-3">
+                <tbody>
+                  <tr><th>Algorithm conformance achieved</th><td>{{ bool_badge(acis.algorithmConformanceAchieved) }}</td></tr>
+                  <tr><th>Implementation security achieved</th><td>{{ bool_badge(acis.implementationSecurityAchieved) }}</td></tr>
+                  <tr><th>Evidence</th><td class="small">{{ acis.evidence }}</td></tr>
+                </tbody>
+              </table>
+              {% if acis.implementationDetails %}
+              <h6 class="text-muted small">Implementation Details</h6>
+              <table class="table table-sm">
+                <tbody>
+                  <tr><th>Seed generation method</th><td>{{ acis.implementationDetails.seedGenerationMethod }}</td></tr>
+                  <tr><th>Constant-time comparison</th><td>{{ bool_badge(acis.implementationDetails.constantTimeComparisonUsed) }}</td></tr>
+                  <tr><th>Precomputed state memory managed</th><td>{{ bool_badge(acis.implementationDetails.precomputedStateMemoryManaged) }}</td></tr>
+                </tbody>
+              </table>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+        {# 2.6 Attack Vector Classification #}
+        {% if nper.attackVectorClassification %}
+        {% set avc = nper.attackVectorClassification %}
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#nper-avc">
+              Attack Vector Classification
+            </button>
+          </h2>
+          <div id="nper-avc" class="accordion-collapse collapse">
+            <div class="accordion-body">
+              <table class="table table-sm attack-grid">
+                <thead class="table-light">
+                  <tr><th>Threat Actor</th><th class="text-center">Resisted</th><th>Reasoning</th></tr>
+                </thead>
+                <tbody>
+                  {% for actor_key, actor_label in [("dishonestOperator","Dishonest Operator"),("maliciousPlayer","Malicious Player"),("externalEavesdropper","External Eavesdropper"),("compromisedOracle","Compromised Oracle")] %}
+                  {% if avc[actor_key] is defined %}
+                  <tr>
+                    <td class="fw-semibold">{{ actor_label }}</td>
+                    <td class="text-center">{{ badge(avc[actor_key].resisted) }}</td>
+                    <td class="small text-muted">{{ avc[actor_key].reasoning }}</td>
+                  </tr>
+                  {% endif %}
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+        {# 2.7 VRF qINP Uniqueness #}
+        {% if nper.vrfQinpUniquenessEnforcement %}
+        {% set vrf_qinp = nper.vrfQinpUniquenessEnforcement %}
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#nper-vrf-qinp">
+              VRF qINP Uniqueness Enforcement
+              <span class="ms-auto me-3">
+                {% if not vrf_qinp.applicable %}{{ na_badge() }}{% else %}{{ badge(vrf_qinp.reqIdContractControlled and vrf_qinp.preseedComputedOnChain) }}{% endif %}
+              </span>
+            </button>
+          </h2>
+          <div id="nper-vrf-qinp" class="accordion-collapse collapse">
+            <div class="accordion-body">
+              {% if not vrf_qinp.applicable %}
+              <p class="text-muted">Not applicable to this mechanism.</p>
+              {% else %}
+              <table class="table table-sm">
+                <tbody>
+                  <tr><th>Request ID contract-controlled</th><td>{{ bool_badge(vrf_qinp.reqIdContractControlled) }}</td></tr>
+                  <tr><th>Preseed computed on-chain</th><td>{{ bool_badge(vrf_qinp.preseedComputedOnChain) }}</td></tr>
+                  <tr><th>Block hash references future block</th><td>{{ bool_badge(vrf_qinp.blockHashReferencesFutureBlock) }}</td></tr>
+                  <tr><th>Evidence</th><td class="small">{{ vrf_qinp.evidence }}</td></tr>
+                </tbody>
+              </table>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+        {# 2.8 drand Future Round Commitment #}
+        {% if nper.drandFutureRoundCommitmentStrategy %}
+        {% set drand_fr = nper.drandFutureRoundCommitmentStrategy %}
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#nper-drand-fr">
+              drand Future Round Commitment Strategy
+              <span class="ms-auto me-3">
+                {% if not drand_fr.applicable %}{{ na_badge() }}{% else %}{{ badge(drand_fr.commitmentAnchorMandatory and drand_fr.contractPreventsEarlySettlement) }}{% endif %}
+              </span>
+            </button>
+          </h2>
+          <div id="nper-drand-fr" class="accordion-collapse collapse">
+            <div class="accordion-body">
+              {% if not drand_fr.applicable %}
+              <p class="text-muted">Not applicable to this mechanism.</p>
+              {% else %}
+              <table class="table table-sm">
+                <tbody>
+                  <tr><th>Rounds tested</th><td>{{ drand_fr.roundsTested }}</td></tr>
+                  <tr><th>Commitment anchor mandatory</th><td>{{ bool_badge(drand_fr.commitmentAnchorMandatory) }}</td></tr>
+                  <tr><th>Contract prevents early settlement</th><td>{{ bool_badge(drand_fr.contractPreventsEarlySettlement) }}</td></tr>
+                  <tr>
+                    <th>Failed rounds</th>
+                    <td class="{% if drand_fr.failedRoundsCount > 0 %}text-danger fw-bold{% endif %}">{{ drand_fr.failedRoundsCount }}</td>
+                  </tr>
+                  <tr><th>Evidence</th><td class="small">{{ drand_fr.evidence }}</td></tr>
+                </tbody>
+              </table>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+        {# 2.9 DKG Phase Integrity #}
+        {% if nper.dkgPhaseIntegrity %}
+        {% set dkg = nper.dkgPhaseIntegrity %}
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#nper-dkg">
+              DKG Phase Integrity
+              <span class="ms-auto me-3">
+                {% if not dkg.applicable %}{{ na_badge() }}{% endif %}
+              </span>
+            </button>
+          </h2>
+          <div id="nper-dkg" class="accordion-collapse collapse">
+            <div class="accordion-body">
+              {% if not dkg.applicable %}
+              <p class="text-muted">Not applicable to this mechanism.</p>
+              {% else %}
+                {% if dkg.keyConsistency %}
+                <h6 class="text-muted small">Key Consistency</h6>
+                <table class="table table-sm mb-3">
+                  <tbody>
+                    <tr><th>All nodes agree post-resharing</th><td>{{ bool_badge(dkg.keyConsistency.allNodesAgreePostResharing) }}</td></tr>
+                    <tr><th>Nodes checked</th><td>{{ dkg.keyConsistency.nodesChecked }}</td></tr>
+                    <tr><th>Evidence</th><td class="small">{{ dkg.keyConsistency.evidence }}</td></tr>
+                  </tbody>
+                </table>
+                {% endif %}
+                {% if dkg.resharingRecency %}
+                <h6 class="text-muted small">Resharing Recency</h6>
+                <table class="table table-sm">
+                  <tbody>
+                    <tr><th>Latest resharing timestamp</th><td>{{ dkg.resharingRecency.latestResharingTimestamp }}</td></tr>
+                    <tr><th>Accepted threshold (days)</th><td>{{ dkg.resharingRecency.acceptedThresholdDays }}</td></tr>
+                    <tr><th>Within threshold</th><td>{{ bool_badge(dkg.resharingRecency.withinThreshold) }}</td></tr>
+                  </tbody>
+                </table>
+                {% endif %}
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+        {# 2.10 Prediction Resistance #}
+        {% if nper.predictionResistance %}
+        {% set pr = nper.predictionResistance %}
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#nper-pr">
+              Prediction Resistance
+              <span class="ms-auto me-3">
+                {% if pr.entropySourceQuality == "strong" %}<span class="badge bg-success">Strong Entropy</span>{% else %}<span class="badge bg-warning text-dark">Weak Entropy</span>{% endif %}
+              </span>
+            </button>
+          </h2>
+          <div id="nper-pr" class="accordion-collapse collapse">
+            <div class="accordion-body">
+              <table class="table table-sm">
+                <tbody>
+                  <tr><th>Reseeding frequency</th><td>{{ enum_tag(pr.reseedingFrequency) }}</td></tr>
+                  <tr><th>Entropy source quality</th><td>{{ enum_tag(pr.entropySourceQuality) }}</td></tr>
+                  <tr><th>Entropy independent of PRNG state</th><td>{{ bool_badge(pr.entropySourceIndependentOfPrngState) }}</td></tr>
+                  <tr><th>Evidence</th><td class="small">{{ pr.evidence }}</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+        {# 2.11 Backwards/Forward State Inference #}
+        {% if nper.backwardsForwardStateInference %}
+        {% set bfsi = nper.backwardsForwardStateInference %}
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#nper-bfsi">
+              Backwards / Forward State Inference
+              <span class="ms-auto me-3">{{ badge(bfsi.usesOneOffSeedsPerRound, "One-off seeds", "Shared state") }}</span>
+            </button>
+          </h2>
+          <div id="nper-bfsi" class="accordion-collapse collapse">
+            <div class="accordion-body">
+              <table class="table table-sm">
+                <tbody>
+                  <tr><th>Uses one-off seeds per round</th><td>{{ bool_badge(bfsi.usesOneOffSeedsPerRound) }}</td></tr>
+                  <tr><th>Shared state update formally documented</th><td>{{ bool_badge(bfsi.ifSharedPrngStateUpdateFormallyDocumented) }}</td></tr>
+                  <tr><th>Shared state update provably one-way</th><td>{{ bool_badge(bfsi.ifSharedPrngStateUpdateProvablyOneWay) }}</td></tr>
+                  <tr><th>Evidence</th><td class="small">{{ bfsi.evidence }}</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+        {# 2.12 Nonce Management #}
+        {% if nper.nonceManagement %}
+        {% set nm = nper.nonceManagement %}
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#nper-nonce">
+              Nonce Management
+              <span class="ms-auto me-3">
+                {{ badge(nm.initialisesAtZero and nm.incrementsByOne and nm.noResetWithoutSeedRotation) }}
+              </span>
+            </button>
+          </h2>
+          <div id="nper-nonce" class="accordion-collapse collapse">
+            <div class="accordion-body">
+              <div class="row g-2 mb-3">
+                <div class="col-auto">{{ bool_badge(nm.initialisesAtZero) }} Initialises at zero</div>
+                <div class="col-auto">{{ bool_badge(nm.incrementsByOne) }} Increments by one</div>
+                <div class="col-auto">{{ bool_badge(nm.noResetWithoutSeedRotation) }} No reset without rotation</div>
+                <div class="col-auto">{{ bool_badge(nm.overflowPolicyDocumented) }} Overflow documented</div>
+              </div>
+              {% if nm.overflowPolicyDescription %}
+              <p class="small text-muted">Overflow policy: {{ nm.overflowPolicyDescription }}</p>
+              {% endif %}
+              <p class="small text-muted mb-0">Evidence: {{ nm.evidence }}</p>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+        {# 2.13 Client Seed Rotation Behaviour #}
+        {% if nper.clientSeedRotationBehaviour %}
+        {% set csrb = nper.clientSeedRotationBehaviour %}
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#nper-csrb">
+              Client Seed Rotation Behaviour
+              <span class="ms-auto me-3">{{ enum_tag(csrb.rotationGuidanceAvailability) }}</span>
+            </button>
+          </h2>
+          <div id="nper-csrb" class="accordion-collapse collapse">
+            <div class="accordion-body">
+              <table class="table table-sm">
+                <tbody>
+                  <tr><th>Default seed source</th><td>{{ enum_tag(csrb.defaultSeedSource) }}</td></tr>
+                  <tr><th>Rotation guidance availability</th><td>{{ enum_tag(csrb.rotationGuidanceAvailability) }}</td></tr>
+                  <tr><th>Rotation recommendation</th><td>{{ enum_tag(csrb.rotationRecommendation) }}</td></tr>
+                  <tr><th>Evidence</th><td class="small">{{ csrb.evidence }}</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+        {# 2.14 VRF Security Assessment #}
+        {% if nper.vrfSecurityAssessment %}
+        {% set vsa = nper.vrfSecurityAssessment %}
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#nper-vsa">
+              VRF Security Assessment
+              <span class="ms-auto me-3">
+                {% if not vsa.applicable %}{{ na_badge() }}{% endif %}
+              </span>
+            </button>
+          </h2>
+          <div id="nper-vsa" class="accordion-collapse collapse">
+            <div class="accordion-body">
+              {% if not vsa.applicable %}
+              <p class="text-muted">Not applicable to this mechanism.</p>
+              {% else %}
+              <table class="table table-sm">
+                <thead class="table-light"><tr><th>Property</th><th>Status</th><th>Detail</th></tr></thead>
+                <tbody>
+                  {% if vsa.outputManipulationResistance %}
+                  <tr><th>Output manipulation resistance</th><td>{{ bool_badge(vsa.outputManipulationResistance.enforced) }}</td><td class="small">{{ vsa.outputManipulationResistance.mechanism }}</td></tr>
+                  {% endif %}
+                  {% if vsa.queryInputUniqueness %}
+                  <tr><th>Query input uniqueness</th><td>{{ enum_tag(vsa.queryInputUniqueness.status) }}</td><td class="small">{{ vsa.queryInputUniqueness.description }}</td></tr>
+                  {% endif %}
+                  {% if vsa.selectiveNonFulfilmentResistance %}
+                  <tr><th>Selective non-fulfilment resistance</th><td>{{ bool_badge(vsa.selectiveNonFulfilmentResistance.mitigated) }}</td><td class="small">{{ vsa.selectiveNonFulfilmentResistance.mitigationMethod }}</td></tr>
+                  {% endif %}
+                  {% if vsa.oracleKeySecurity %}
+                  <tr><th>Oracle key security</th><td>{{ bool_badge(vsa.oracleKeySecurity.cryptographicallyEnforced) }}</td><td class="small">{{ vsa.oracleKeySecurity.description }}</td></tr>
+                  {% endif %}
+                </tbody>
+              </table>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+        {# 2.15 Verification & Transparency Scores #}
+        {% if nper.verificationTransparencyScores %}
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#nper-vts">
+              Verification &amp; Transparency Scores
+            </button>
+          </h2>
+          <div id="nper-vts" class="accordion-collapse collapse">
+            <div class="accordion-body">
+              <div class="chart-container-lg mb-3">
+                <canvas id="transparencyScoresChart"></canvas>
+              </div>
+              <table class="table table-sm">
+                <thead class="table-light"><tr><th>Dimension</th><th>Justification</th></tr></thead>
+                <tbody>
+                  {% for label, just in nper.transparency_chart_data.justifications.items() %}
+                  <tr><th class="small">{{ label }}</th><td class="small text-muted">{{ just }}</td></tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+      </div>{# end accordion #}
+      {% endif %}{# end nper #}
+
+      {# ════════════════════════════════════════════════════════════════════ #}
+      {# Section 5: Combined Scorecard                                       #}
+      {# ════════════════════════════════════════════════════════════════════ #}
+      <h2 class="section-heading" id="scorecard">Combined Scorecard</h2>
+      <div class="card mb-5">
+        <div class="card-body p-0">
+          <table class="table table-hover mb-0">
+            <thead class="table-dark">
+              <tr><th>Domain</th><th>Metric</th><th>Value</th><th class="text-center">Result</th></tr>
+            </thead>
+            <tbody>
+              {% for row in scorecard.rows %}
+              <tr>
+                <td class="fw-semibold">{{ row.domain }}</td>
+                <td>{{ row.metric }}</td>
+                <td>{{ row.value }}</td>
+                <td class="text-center">{{ badge(row.passed) }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+const SIG = {{ significance_level }};
+
+function passColours(values, sig) {
+  return values.map(v => v >= sig ? "rgba(25,135,84,0.75)" : "rgba(220,53,69,0.75)");
+}
+
+{% if randomness and randomness.histogram %}
+(function() {
+  const hist = {{ randomness.histogram | tojson }};
+  new Chart(document.getElementById("histogramChart"), {
+    type: "bar",
+    data: {
+      labels: hist.labels,
+      datasets: [
+        {
+          label: "Observed",
+          data: hist.observed,
+          backgroundColor: "rgba(13,110,253,0.7)",
+          borderColor: "rgba(13,110,253,1)",
+          borderWidth: 1,
+        },
+        {
+          label: "Expected",
+          data: hist.labels.map(() => hist.expected),
+          type: "line",
+          borderColor: "rgba(220,53,69,0.9)",
+          borderDash: [6,3],
+          borderWidth: 2,
+          pointRadius: 0,
+          fill: false,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { position: "top" } },
+      scales: {
+        x: { title: { display: true, text: "Outcome (face value)" } },
+        y: { title: { display: true, text: "Count" }, beginAtZero: true },
+      },
+    },
+  });
+})();
+{% endif %}
+
+{% if randomness and randomness.nist_light %}
+(function() {
+  const tests = {{ randomness.nist_light | tojson }};
+  const labels = tests.map(t => t.name);
+  const pvals  = tests.map(t => t.p_value);
+  new Chart(document.getElementById("nistLightChart"), {
+    type: "bar",
+    data: {
+      labels: labels,
+      datasets: [{
+        label: "P-value",
+        data: pvals,
+        backgroundColor: passColours(pvals, SIG),
+        borderWidth: 1,
+      }],
+    },
+    options: {
+      indexAxis: "y",
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        annotation: {
+          annotations: {
+            threshold: {
+              type: "line",
+              xMin: SIG, xMax: SIG,
+              borderColor: "rgba(220,53,69,0.9)",
+              borderWidth: 2,
+              borderDash: [6,3],
+              label: { content: "α=" + SIG, display: true, position: "end" },
+            },
+          },
+        },
+      },
+      scales: {
+        x: { min: 0, max: 1, title: { display: true, text: "P-value" } },
+      },
+    },
+  });
+})();
+{% endif %}
+
+{% if randomness and randomness.nist_in_depth %}
+(function() {
+  const tests = {{ randomness.nist_in_depth | tojson }};
+  const labels = tests.map(t => t.name);
+  const pvals  = tests.map(t => t.p_value);
+  new Chart(document.getElementById("nistDepthChart"), {
+    type: "bar",
+    data: {
+      labels: labels,
+      datasets: [{
+        label: "P-value",
+        data: pvals,
+        backgroundColor: passColours(pvals, SIG),
+        borderWidth: 1,
+      }],
+    },
+    options: {
+      indexAxis: "y",
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        annotation: {
+          annotations: {
+            threshold: {
+              type: "line",
+              xMin: SIG, xMax: SIG,
+              borderColor: "rgba(220,53,69,0.9)",
+              borderWidth: 2,
+              borderDash: [6,3],
+              label: { content: "α=" + SIG, display: true, position: "end" },
+            },
+          },
+        },
+      },
+      scales: {
+        x: { min: 0, max: 1, title: { display: true, text: "P-value" } },
+      },
+    },
+  });
+})();
+{% endif %}
+
+{% if nper and nper.transparency_chart_data %}
+(function() {
+  const td = {{ nper.transparency_chart_data | tojson }};
+  new Chart(document.getElementById("transparencyScoresChart"), {
+    type: "bar",
+    data: {
+      labels: td.labels,
+      datasets: [{
+        label: "Score",
+        data: td.scores,
+        backgroundColor: td.scores.map(s =>
+          s >= 1.0 ? "rgba(25,135,84,0.75)" :
+          s >= 0.5 ? "rgba(255,193,7,0.75)" :
+                     "rgba(220,53,69,0.75)"
+        ),
+        borderWidth: 1,
+      }],
+    },
+    options: {
+      indexAxis: "y",
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { min: 0, max: 1, title: { display: true, text: "Score (0–1)" } },
+      },
+    },
+  });
+})();
+{% endif %}
+
+</script>
+</body>
+</html>

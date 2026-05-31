@@ -34,7 +34,7 @@ mechanisms_under_evaluation = {
     },
 }
 
-SELECTED_MECHANISM = "OFF_CHAIN_HMAC" # IGNORE THIS: For demonstration, I hardcode the mechanism selection here.
+SELECTED_MECHANISM = "DRAND" # IGNORE THIS: For demonstration, I hardcode the mechanism selection here.
 
 
 def main():
