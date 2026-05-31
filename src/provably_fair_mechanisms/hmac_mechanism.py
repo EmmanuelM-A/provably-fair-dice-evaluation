@@ -1,6 +1,6 @@
 import hashlib
 import hmac
-
+import math
 import os
 from datetime import datetime, timezone
 from typing import List
@@ -9,14 +9,32 @@ import pandas as pd
 
 from src.enigines.pfd import ProvablyFairDiceMechanism
 from src.logger.base_logger import BaseLogger
-from src.utils.common_operations import rejection_sampling
 from src.utils.types import RollRecord, VerificationResult
+
+# Matches Stake's MAX_ROLL constant for their dice game.
+_MAX_ROLL = 10001
+
+
+def stake_dice_outcome(raw_output: bytes) -> float:
+    """
+    Module-level wrapper around HMACMechanism._dice_outcome for use as a
+    mapping_fn in the evaluation engine.
+    """
+    return HMACMechanism._dice_outcome(raw_output)
 
 
 class HMACMechanism(ProvablyFairDiceMechanism):
     """
-    The concrete implementation of a traditional provably fair dice mechanism
-    using HMAC (off-chain approach).
+    Provably fair dice mechanism replicating Stake.com's publicly disclosed
+    off-chain HMAC-SHA256 architecture.
+
+    Algorithm (source: stake.com/provably-fair/implementation):
+    1. Server seed: os.urandom(32).hex()  — 64-char hex string.
+    2. Commitment:  SHA-256(server_seed)  — published before any bets.
+    3. Per-roll:    HMAC-SHA256(key=server_seed, msg="{client_seed}:{nonce}:{cursor}")
+       where cursor = 0 for single-outcome games.
+    4. Outcome:     floor(bytes_to_number(digest[:4]) * MAX_ROLL) / 100
+       giving a float in [0.00, 100.00] with two decimal places.
     """
 
     # ========================= MECHANISM SPECIFIC =========================
@@ -32,40 +50,54 @@ class HMACMechanism(ProvablyFairDiceMechanism):
 
     @staticmethod
     def _generate_server_seed() -> str:
-        """
-        Generates a random server seed using the OS's cryptographically
-        secure random number generator.
-        """
         return os.urandom(32).hex()
 
     @staticmethod
     def _commit(server_seed: str) -> str:
-        """
-        Produces a server seed commitment which is published before the game
-        round starts.
-        """
         return hashlib.sha256(server_seed.encode()).hexdigest()
 
     def _verify_commitment(self, server_seed: str, published_commitment: str) -> bool:
-        """
-        Verifies that the disclosed server seed matches the published commitment.
-        """
         recomputed_commitment = self._commit(server_seed)
         return self.safe_compare(recomputed_commitment, published_commitment)
 
     def _generate_raw_output(
-        self, server_seed: str, client_seed: str, nonce: int
+        self, server_seed: str, client_seed: str, nonce: int, cursor: int = 0
     ) -> bytes:
         """
-        HMAC-SHA256(key=server_seed, msg=f"{client_seed}:{nonce}") produces
-        32 bytes of pseudorandom data.
+        HMAC-SHA256(key=server_seed, msg="{client_seed}:{nonce}:{cursor}")
+
+        The cursor tracks the 32-byte chunk index for multi-outcome games.
+        For a single dice roll only one 4-byte chunk is needed, so cursor = 0.
         """
-        message = f"{client_seed}:{nonce}".encode()
+        message = f"{client_seed}:{nonce}:{cursor}".encode()
         return hmac.new(
             server_seed.encode(),
             message,
             digestmod=hashlib.sha256,
         ).digest()
+
+    @staticmethod
+    def _bytes_to_number(digest: bytes) -> float:
+        """
+        Converts the first 4 bytes of an HMAC digest to a float in [0, 1).
+
+        Matches Stake's bytes_to_number implementation:
+            total = byte[0]/256 + byte[1]/256^2 + byte[2]/256^3 + byte[3]/256^4
+        """
+        total = 0.0
+        for i in range(4):
+            total += digest[i] / (256 ** (i + 1))
+        return total
+
+    @staticmethod
+    def _dice_outcome(digest: bytes) -> float:
+        """
+        Maps an HMAC digest to a Stake-style dice result in [0.00, 100.00].
+
+        Formula: floor(bytes_to_number(digest) * MAX_ROLL) / 100
+        where MAX_ROLL = 10001, matching Stake's published dice implementation.
+        """
+        return math.floor(HMACMechanism._bytes_to_number(digest) * _MAX_ROLL) / 100
 
     # ======================== RANDOMNESS OPERATIONS ========================
 
@@ -87,11 +119,13 @@ class HMACMechanism(ProvablyFairDiceMechanism):
             self._logger.info(f"Roll {nonce}/{quantity}...")
 
             raw_output = self._generate_raw_output(
-                self._client_seed, server_seed, nonce
+                server_seed=server_seed,
+                client_seed=self._client_seed,
+                nonce=nonce,
+                cursor=0,
             )
 
-            # Map the raw bytes to a dice outcome using rejection sampling.
-            outcome = rejection_sampling(raw_output=raw_output)
+            outcome = self._dice_outcome(raw_output)
 
             records.append(
                 {
@@ -120,7 +154,7 @@ class HMACMechanism(ProvablyFairDiceMechanism):
                 )
             )
 
-            self._logger.info(f"Nonce {nonce} -> outcome={outcome}")
+            self._logger.info(f"Nonce {nonce} -> outcome={outcome:.2f}")
 
         df = pd.DataFrame(records)
 
@@ -137,24 +171,24 @@ class HMACMechanism(ProvablyFairDiceMechanism):
 
     def verify(self, record: RollRecord) -> VerificationResult:
         """
-        Independently recompute the outcome from a disclosed server seed and
-        confirm it matches the recorded outcome. Replicating what a user
-        would do post-game/match/session to verify fairness.
+        Recomputes the outcome from the disclosed server seed and confirms it
+        matches the recorded outcome, replicating what a player would do
+        post-session to verify fairness.
         """
         recomputed_output = self._generate_raw_output(
             server_seed=record.server_seed,
             client_seed=record.client_seed,
             nonce=record.nonce,
+            cursor=0,
         )
 
-        recomputed_outcome = rejection_sampling(recomputed_output)
+        recomputed_outcome = self._dice_outcome(recomputed_output)
 
-        # Formatted both outcomes to zero-padded 4-digit strs to ensure the
-        # same length regardless of outcome values
-        recorded_outcome_fl = f"{record.outcome:04d}"
-        recomputed_outcome_fl = f"{recomputed_outcome:04d}"
+        # Format to two decimal places — matches Stake's .toFixed(2) output.
+        recorded_str = f"{record.outcome:.2f}"
+        recomputed_str = f"{recomputed_outcome:.2f}"
 
-        is_match = self.safe_compare(recomputed_outcome_fl, recorded_outcome_fl)
+        is_match = self.safe_compare(recorded_str, recomputed_str)
 
         return VerificationResult(
             record=record,

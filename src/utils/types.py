@@ -11,7 +11,7 @@ class RollRecord:
     client_seed: str
     nonce: int
     raw_output: bytes
-    outcome: int
+    outcome: float
     timestamp: datetime
     mechanism_id: str
 
@@ -20,5 +20,5 @@ class RollRecord:
 class VerificationResult:
     record: RollRecord
     disclosed_server_seed: str
-    recomputed_outcome: int
+    recomputed_outcome: float
     match: bool

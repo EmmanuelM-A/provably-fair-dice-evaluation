@@ -6,7 +6,7 @@ from src.utils.types import RollRecord
 
 def outcome_mapping_reproducibility(
     rolls: List[RollRecord],
-    mapping_fn: Callable[[bytes], int],
+    mapping_fn: Callable[[bytes], float],
     min_records: int = 100,
 ) -> BinaryResult:
     """

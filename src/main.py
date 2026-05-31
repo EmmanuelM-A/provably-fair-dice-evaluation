@@ -6,7 +6,7 @@ from src.enigines.evaluation import EvaluationEngine
 from src.enigines.pfd import ProvablyFairDiceMechanism
 from src.provably_fair_mechanisms.chainlink_vrf_mechanism import ChainlinkVRFMechanism
 from src.provably_fair_mechanisms.drand_mechanism import DrandMechanism
-from src.provably_fair_mechanisms.hmac_mechanism import HMACMechanism
+from src.provably_fair_mechanisms.hmac_mechanism import HMACMechanism, stake_dice_outcome
 from src.utils.common_operations import rejection_sampling
 from src.utils.data_loader import load_roll_records_from
 
@@ -71,10 +71,17 @@ def main():
         results_file_path=results_file_path,
     )
 
+    # Each mechanism has its own bytes-to-outcome formula.
+    mapping_fns = {
+        "OFF_CHAIN_HMAC": stake_dice_outcome,
+        "CHAINLINK_VRF": rejection_sampling,
+        "DRAND": rejection_sampling,
+    }
+
     engine.run_evaluation(
         rolls=rolls,
         tier=args.tier,
-        mapping_fn=rejection_sampling,
+        mapping_fn=mapping_fns[SELECTED_MECHANISM],
     )
 
 

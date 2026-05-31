@@ -139,15 +139,19 @@ def cramer_von_mises_test(outcomes: List[int], configs: EvaluationConfig) -> Tes
 
     n = len(outcomes)
     arr = np.array(outcomes, dtype=float)
-    n_faces = int(arr.max())
+    obs_min = float(arr.min())
+    obs_max = float(arr.max())
 
-    if n_faces < 2:
+    if obs_max == obs_min:
         raise ValueError(
-            "Cramer-von Mises Test requires at least 2 distinct faces. "
-            f"Max outcome observed is {n_faces}."
+            "Cramer-von Mises Test requires at least 2 distinct outcome values. "
+            f"All {n} outcomes equal {obs_min}."
         )
 
-    normalised = (arr - 1.0) / (n_faces - 1.0)
+    # Normalise to [0, 1] using the observed min/max so the test works for
+    # any outcome range — integer faces (e.g. 1–100) or Stake-style floats
+    # (0.00–100.00) without assuming a fixed lower bound of 1.
+    normalised = (arr - obs_min) / (obs_max - obs_min)
 
     result = stats.cramervonmises(
         rvs=normalised,
@@ -161,9 +165,10 @@ def cramer_von_mises_test(outcomes: List[int], configs: EvaluationConfig) -> Tes
         passed=result.pvalue >= configs.significance_level,
         parameters_used={
             "n_rolls": n,
-            "n_faces_inferred": n_faces,
+            "obs_min": obs_min,
+            "obs_max": obs_max,
             "statistic": float(result.statistic),
-            "normalisation": "(outcome - 1) / (n_faces - 1)",
+            "normalisation": "(outcome - obs_min) / (obs_max - obs_min)",
             "reference_cdf": "uniform(0, 1)",
         },
     )
