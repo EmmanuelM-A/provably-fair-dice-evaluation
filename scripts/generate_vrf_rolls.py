@@ -17,7 +17,7 @@ import argparse
 
 from dotenv import load_dotenv
 
-from src.provably_fair_mechanisms.chainlink_vrf_mechanism import ChainlinkVRFMechanism
+from src.provably_fair_mechanisms.chainlink_vrf_mechanism import BetSwirlChainlinkMechanism
 
 load_dotenv()
 

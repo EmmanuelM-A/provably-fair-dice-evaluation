@@ -17,13 +17,13 @@ _MAX_ROLL = 10001
 
 def stake_dice_outcome(raw_output: bytes) -> float:
     """
-    Module-level wrapper around HMACMechanism._dice_outcome for use as a
+    Module-level wrapper around StakesHMACMechanism._dice_outcome for use as a
     mapping_fn in the evaluation engine.
     """
-    return HMACMechanism._dice_outcome(raw_output)
+    return StakesHMACMechanism._dice_outcome(raw_output)
 
 
-class HMACMechanism(ProvablyFairDiceMechanism):
+class StakesHMACMechanism(ProvablyFairDiceMechanism):
     """
     Provably fair dice mechanism replicating Stake.com's publicly disclosed
     off-chain HMAC-SHA256 architecture.
@@ -97,7 +97,7 @@ class HMACMechanism(ProvablyFairDiceMechanism):
         Formula: floor(bytes_to_number(digest) * MAX_ROLL) / 100
         where MAX_ROLL = 10001, matching Stake's published dice implementation.
         """
-        return math.floor(HMACMechanism._bytes_to_number(digest) * _MAX_ROLL) / 100
+        return math.floor(StakesHMACMechanism._bytes_to_number(digest) * _MAX_ROLL) / 100
 
     # ======================== RANDOMNESS OPERATIONS ========================
 

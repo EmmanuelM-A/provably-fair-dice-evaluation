@@ -67,7 +67,7 @@ class EvaluationEngine:
         self,
         rolls: List[RollRecord],
         tier: Literal["LIGHT", "IN_DEPTH", "FULL_DEPTH"],
-        mapping_fn: Optional[Callable[[bytes], int]] = None,
+        mapping_fn: Optional[Callable[[bytes], float]] = None,
     ) -> EvaluationResult:
         self._logger.info(f"Starting {tier} evaluation for mechanism: {self._mechanism}")
 

@@ -1,5 +1,19 @@
-import hashlib
-import hmac as _hmac
+"""
+Generates provably fair dice rolls using Chainlink VRF v2.5, modelling
+BetSwirl's on-chain dice game.
+
+Implementation source: BetSwirl (https://www.betswirl.com)
+Algorithm:
+    1. A VRF request is submitted on-chain via the consumer contract for each roll.
+    2. Chainlink fulfils the request with a verifiable random uint256 word.
+    3. Dice outcome: uint8((randomWords[0] % 100) + 1)  ->  integer in [1, 100].
+    4. Verification: re-fetch randomWords[0] via getRequestStatus(requestId)
+       and recompute the same modulo formula.
+
+Each roll corresponds to exactly one VRF request. The requestId (nonce) is the
+on-chain handle used to retrieve and re-verify the randomness post-game.
+"""
+
 import os
 import time
 from datetime import datetime, timezone
@@ -11,10 +25,8 @@ from web3 import Web3
 from web3.exceptions import ContractLogicError
 from web3.types import Wei
 
-from src.config.configs import MAX_VALUE, REJECTION_THRESHOLD
 from src.enigines.pfd import ProvablyFairDiceMechanism
 from src.logger.base_logger import BaseLogger
-from src.utils.common_operations import rejection_sampling
 from src.utils.types import RollRecord, VerificationResult
 
 load_dotenv()
@@ -43,12 +55,42 @@ CONSUMER_ABI = [
 ]
 
 
-class ChainlinkVRFMechanism(ProvablyFairDiceMechanism):
+def betswirl_dice_outcome(raw_output: bytes) -> float:
+    """
+    Module-level wrapper for use as mapping_fn in the evaluation engine.
+    Maps the 32-byte VRF word to a BetSwirl dice outcome in [1, 100].
+    """
+    vrf_word = int.from_bytes(raw_output, "big")
+    return float((vrf_word % 100) + 1)
+
+
+class BetSwirlChainlinkMechanism(ProvablyFairDiceMechanism):
+    """
+    Provably fair dice mechanism replicating BetSwirl's on-chain Chainlink
+    VRF v2.5 dice game.
+
+    Source: https://www.betswirl.com
+
+    Algorithm (from BetSwirl's published dice contract):
+    1. requestRandomWords(enableNativePayment=False, numWords=1) is called
+       on-chain for each individual dice roll.
+    2. Chainlink VRF fulfils the request with a verifiable random uint256 word.
+    3. Dice outcome: uint8((randomWords[0] % 100) + 1) -> integer in [1, 100].
+    4. Verification: call getRequestStatus(requestId), recompute the formula,
+       compare to the stored outcome.
+
+    Fields in RollRecord:
+    - server_seed : hex of the 32-byte VRF random word (the verifiable randomness).
+    - client_seed : consumer contract address (the on-chain requester).
+    - nonce       : VRF requestId (on-chain handle used for post-game verification).
+    - raw_output  : big-endian bytes of the VRF random word.
+    - outcome     : (raw_word % 100) + 1, range [1.0, 100.0].
+    """
 
     # ========================= MECHANISM SPECIFIC =========================
 
     def __init__(self, output_file: str) -> None:
-        self.MECHANISM_ID = "chainlink-vrf-v2.5"
+        self.MECHANISM_ID = "betswirl-chainlink-vrf-v2.5"
         self._logger = BaseLogger(__name__)
         self._output_file = output_file
 
@@ -79,7 +121,7 @@ class ChainlinkVRFMechanism(ProvablyFairDiceMechanism):
         )
 
     def __str__(self) -> str:
-        return "Chainlink VRF v2.5 Mechanism"
+        return "BetSwirl Chainlink VRF v2.5 Mechanism"
 
     # ======================== RANDOMNESS OPERATIONS ========================
 
@@ -152,36 +194,33 @@ class ChainlinkVRFMechanism(ProvablyFairDiceMechanism):
             "Check your subscription balance at vrf.chain.link."
         )
 
+    @staticmethod
+    def _vrf_word_to_outcome(vrf_word: int) -> float:
+        """BetSwirl dice formula: uint8((randomWords[0] % 100) + 1)."""
+        return float((vrf_word % 100) + 1)
+
     def generate_rolls(self, quantity: int, save_rolls: bool = True) -> List[RollRecord]:
-        # 1. Mine one VRF word — this becomes the server seed for the session.
-        request_id = self._submit_request()
-        vrf_word = self._wait_for_fulfilment(request_id)
-        server_seed_bytes = vrf_word.to_bytes(32, "big")
-        server_seed = server_seed_bytes.hex()
-        client_seed = self._consumer_address
-        timestamp = datetime.now(timezone.utc)
-
-        self._logger.info(f"Session server_seed={server_seed} (VRF requestId={request_id})")
-
-        # 2. Derive all rolls via HMAC-SHA256 — no further on-chain calls.
         rolls: List[RollRecord] = []
         records = []
-        for nonce in range(quantity):
-            raw_output = _hmac.new(
-                key=server_seed_bytes,
-                msg=f"{client_seed}{nonce}".encode(),
-                digestmod=hashlib.sha256,
-            ).digest()
-            outcome = rejection_sampling(
-                raw_output=raw_output,
-                rejection_threshold=REJECTION_THRESHOLD,
-                max_value=MAX_VALUE,
+
+        for i in range(quantity):
+            self._logger.info(f"Roll {i + 1}/{quantity}: submitting VRF request...")
+
+            request_id = self._submit_request()
+            vrf_word = self._wait_for_fulfilment(request_id)
+            raw_output = vrf_word.to_bytes(32, "big")
+            outcome = self._vrf_word_to_outcome(vrf_word)
+            timestamp = datetime.now(timezone.utc)
+
+            self._logger.info(
+                f"requestId={request_id} -> vrf_word={hex(vrf_word)}, outcome={outcome:.0f}"
             )
+
             records.append(
                 {
-                    "server_seed": server_seed,
-                    "client_seed": client_seed,
-                    "nonce": nonce,
+                    "server_seed": raw_output.hex(),
+                    "client_seed": self._consumer_address,
+                    "nonce": request_id,
                     "raw_output": raw_output.hex(),
                     "outcome": outcome,
                     "timestamp": timestamp.isoformat(),
@@ -190,9 +229,9 @@ class ChainlinkVRFMechanism(ProvablyFairDiceMechanism):
             )
             rolls.append(
                 RollRecord(
-                    server_seed=server_seed,
-                    client_seed=client_seed,
-                    nonce=nonce,
+                    server_seed=raw_output.hex(),
+                    client_seed=self._consumer_address,
+                    nonce=request_id,
                     raw_output=raw_output,
                     outcome=outcome,
                     timestamp=timestamp,
@@ -213,21 +252,27 @@ class ChainlinkVRFMechanism(ProvablyFairDiceMechanism):
     # ======================= VERIFICATION OPERATIONS =======================
 
     def verify(self, record: RollRecord) -> VerificationResult:
-        # Recompute HMAC from the stored server_seed, client_seed, and nonce.
-        server_seed_bytes = bytes.fromhex(record.server_seed)
-        raw_output = _hmac.new(
-            key=server_seed_bytes,
-            msg=f"{record.client_seed}{record.nonce}".encode(),
-            digestmod=hashlib.sha256,
-        ).digest()
-        recomputed_outcome = rejection_sampling(
-            raw_output=raw_output,
-            rejection_threshold=REJECTION_THRESHOLD,
-            max_value=MAX_VALUE,
-        )
+        """
+        Fetches the fulfilled VRF word for the stored requestId (nonce) and
+        recomputes (randomWords[0] % 100) + 1 to confirm it matches the stored
+        outcome, replicating what a player would do post-game on BetSwirl.
+        """
+        fulfilled, random_words = self._consumer.functions.getRequestStatus(
+            record.nonce
+        ).call(block_identifier="latest")
+
+        if not fulfilled or not random_words:
+            raise RuntimeError(
+                f"VRF request {record.nonce} is not yet fulfilled on-chain. "
+                "Wait for Chainlink to deliver the randomness before verifying."
+            )
+
+        recomputed_outcome = self._vrf_word_to_outcome(random_words[0])
+
         is_match = self.safe_compare(
-            f"{record.outcome:04d}", f"{recomputed_outcome:04d}"
+            f"{record.outcome:.0f}", f"{recomputed_outcome:.0f}"
         )
+
         return VerificationResult(
             record=record,
             disclosed_server_seed=record.server_seed,
