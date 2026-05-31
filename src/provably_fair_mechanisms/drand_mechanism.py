@@ -146,8 +146,10 @@ class BlockRandDrandMechanism(ProvablyFairDiceMechanism):
         latest_beacon = self._fetch_latest_beacon()
         chain_info = self._fetch_chain_info()
         period_seconds = chain_info["period"]
-        start_round = latest_beacon["round"]
-        self._logger.info(f"Starting from round {start_round}")
+        # Start from a past round so all beacons are already published —
+        # no per-roll waiting required.
+        start_round = max(1, latest_beacon["round"] - quantity + 1)
+        self._logger.info(f"Latest round={latest_beacon['round']}, starting from round {start_round} (historical)")
 
         rolls: List[RollRecord] = []
         records = []
