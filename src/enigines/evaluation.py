@@ -43,6 +43,7 @@ class EvaluationResult:
     mechanism: str
     tier: str
     saved_at: str
+    halted_at: Optional[str] = None  # "LIGHT" or "IN_DEPTH" if a gate fired early
     randomness: Optional[RandomnessEvaluationResult] = None
     security: Optional[SecurityEvaluationResult] = None
     performance: Optional[PerformanceEvaluationResult] = None
@@ -64,6 +65,31 @@ class EvaluationEngine:
         self._results_file_path = results_file_path
         self._logger = BaseLogger(__name__)
 
+    def _save(self, result: EvaluationResult) -> None:
+        os.makedirs(os.path.dirname(os.path.abspath(self._results_file_path)), exist_ok=True)
+        with open(self._results_file_path, "w", encoding="utf-8") as f:
+            json.dump(result.to_json(), f, cls=_JsonEncoder, indent=4)
+        self._logger.info(f"Results saved to {self._results_file_path}")
+
+    def _light_gate_passes(self, result: EvaluationResult) -> bool:
+        """Gate 1: halt progression to IN_DEPTH if nonce presence fails."""
+        if result.security and result.security.light:
+            return result.security.light.nonce_presence.passed
+        return True
+
+    def _in_depth_gate_passes(self, result: EvaluationResult) -> bool:
+        """Gate 2: halt progression to FULL_DEPTH if entropy monitoring has alarms."""
+        if result.randomness and result.randomness.in_depth:
+            em = result.randomness.in_depth.entropy_monitoring
+            if em:
+                rep = em.get("repetition_count")
+                adp = em.get("adaptive_proportion")
+                if rep is not None and not rep.passed:
+                    return False
+                if adp is not None and not adp.passed:
+                    return False
+        return True
+
     def run_evaluation(
         self,
         rolls: List[RollRecord],
@@ -78,24 +104,62 @@ class EvaluationEngine:
             saved_at=datetime.now(timezone.utc).strftime(DATE_FORMAT),
         )
 
-        result.randomness = RandomnessTests(self._config, tier, self._mechanism).run(rolls)
-        result.security = SecurityTests(self._config, tier).run(rolls)
-        result.performance = PerformanceTests(self._config, tier).run(
+        # Phase 1: always run LIGHT for all domains
+        result.randomness = RandomnessTests(self._config, "LIGHT", self._mechanism).run(rolls)
+        result.security = SecurityTests(self._config, "LIGHT").run(rolls)
+        result.performance = PerformanceTests(self._config, "LIGHT").run(
             mechanism=self._mechanism,
             n_latency_requests=self._config.n_latency_requests,
-            n_startup_requests=self._config.n_startup_requests,
-            n_load_requests=self._config.n_load_requests,
         )
-        result.transparency = TransparencyTests(self._config, tier).run(
+        result.transparency = TransparencyTests(self._config, "LIGHT").run(
             rolls=rolls,
             mechanism=self._mechanism,
             mapping_fn=mapping_fn,
         )
 
-        os.makedirs(os.path.dirname(os.path.abspath(self._results_file_path)), exist_ok=True)
-        with open(self._results_file_path, "w", encoding="utf-8") as f:
-            json.dump(result.to_json(), f, cls=_JsonEncoder, indent=4)
+        # Gate 1: halt if nonce presence fails
+        if not self._light_gate_passes(result):
+            self._logger.warning("Gate 1 fired: nonce_presence failed — halting at LIGHT.")
+            result.halted_at = "LIGHT"
+            self._save(result)
+            return result
 
-        self._logger.info(f"Results saved to {self._results_file_path}")
+        if tier not in ("IN_DEPTH", "FULL_DEPTH"):
+            self._save(result)
+            return result
 
+        # Phase 2: run IN_DEPTH (splice only the in_depth parts)
+        self._logger.info("Progressing to IN_DEPTH evaluation...")
+
+        in_depth_randomness = RandomnessTests(self._config, "IN_DEPTH", self._mechanism).run(rolls)
+        result.randomness.in_depth = in_depth_randomness.in_depth
+
+        # Gate 2: halt if entropy monitoring has alarms
+        if not self._in_depth_gate_passes(result):
+            self._logger.warning("Gate 2 fired: entropy monitoring alarms — halting at IN_DEPTH.")
+            result.halted_at = "IN_DEPTH"
+            self._save(result)
+            return result
+
+        in_depth_performance = PerformanceTests(self._config, "IN_DEPTH").run(
+            mechanism=self._mechanism,
+            n_latency_requests=self._config.n_latency_requests,
+            n_startup_requests=self._config.n_startup_requests,
+            n_load_requests=self._config.n_load_requests,
+        )
+        result.performance.in_depth = in_depth_performance.in_depth
+
+        if tier not in ("FULL_DEPTH",):
+            self._save(result)
+            return result
+
+        # Phase 3: attempt FULL_DEPTH (each class catches NotImplementedError internally)
+        self._logger.info("Progressing to FULL_DEPTH evaluation...")
+        try:
+            full_depth_randomness = RandomnessTests(self._config, "FULL_DEPTH", self._mechanism).run(rolls)
+            result.randomness.full_depth = full_depth_randomness.full_depth
+        except NotImplementedError:
+            self._logger.warning("Randomness FULL_DEPTH not implemented, skipping.")
+
+        self._save(result)
         return result
