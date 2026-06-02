@@ -1,5 +1,6 @@
 """
-Script to run system:
+The standalone script to generate the dice rolls for the evaluation.
+
 
 --c COUNT: Number of rolls to generate. Default is 1000
 --t TIER: Evaluation depth tier (LIGHT, IN_DEPTH, FULL_DEPTH). Default is LIGHT.

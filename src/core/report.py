@@ -137,7 +137,6 @@ def _load_evaluation_result(path: str) -> EvaluationResult:
         d = json.load(f)
     return EvaluationResult(
         mechanism=d["mechanism"],
-        mechanism_id=d["mechanism_id"],
         tier=d["tier"],
         saved_at=d["saved_at"],
         randomness=_randomness_result(d["randomness"]) if d.get("randomness") else None,

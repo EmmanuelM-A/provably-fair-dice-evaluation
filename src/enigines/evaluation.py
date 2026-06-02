@@ -41,6 +41,7 @@ class _JsonEncoder(json.JSONEncoder):
 class EvaluationResult:
     """Aggregates results from all evaluation categories."""
     mechanism: str
+    tier: str
     saved_at: str
     randomness: Optional[RandomnessEvaluationResult] = None
     security: Optional[SecurityEvaluationResult] = None
@@ -73,6 +74,7 @@ class EvaluationEngine:
 
         result = EvaluationResult(
             mechanism=str(self._mechanism),
+            tier=tier,
             saved_at=datetime.now(timezone.utc).strftime(DATE_FORMAT),
         )
 

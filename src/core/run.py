@@ -28,6 +28,12 @@ def main() -> None:
         help="The number of rolls to generate (default: 1000)"
     )
     parser.add_argument(
+        "--t",
+        choices=["LIGHT", "IN_DEPTH", "FULL_DEPTH"],
+        default="LIGHT",
+        help="Evaluation depth tier (default: LIGHT)",
+    )
+    parser.add_argument(
         "--d",
         type=str,
         required=True,
