@@ -9,7 +9,6 @@ from src.logger.base_logger import BaseLogger
 from src.modules.report.builders import (
     build_nper_data,
     build_randomness_data,
-    build_scorecard_data,
     build_security_data,
     build_transparency_data,
 )
@@ -54,7 +53,6 @@ class ReportEngine:
             else None
         )
         nper_data = build_nper_data(non_programmable) if non_programmable else None
-        scorecard_data = build_scorecard_data(programmable, non_programmable)
 
         template = self._env.get_template("template.html")
         html = template.render(
@@ -65,7 +63,6 @@ class ReportEngine:
             security=security_data,
             transparency=transparency_data,
             nper=nper_data,
-            scorecard=scorecard_data,
             significance_level=0.01,
         )
 

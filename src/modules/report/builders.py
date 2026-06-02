@@ -15,7 +15,7 @@ def build_randomness_data(
 ) -> dict:
     outcomes = [r.outcome for r in rolls]
     face_labels = list(range(1, n_faces + 1))
-    counts = Counter(int(o) for o in outcomes)
+    counts = Counter(min(n_faces, max(1, int(o))) for o in outcomes)
     observed = [counts.get(f, 0) for f in face_labels]
     expected = round(len(outcomes) / n_faces, 2) if n_faces > 0 else 0
 

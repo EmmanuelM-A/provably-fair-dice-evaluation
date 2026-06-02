@@ -9,15 +9,6 @@
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
   <style>
     body { background: #f8f9fa; }
-    #sidebar {
-      position: sticky;
-      top: 1rem;
-      max-height: calc(100vh - 2rem);
-      overflow-y: auto;
-    }
-    #sidebar .nav-link { color: #495057; font-size: 0.85rem; padding: 0.2rem 0.75rem; }
-    #sidebar .nav-link:hover, #sidebar .nav-link.active { color: #0d6efd; }
-    #sidebar .nav-link.sub { padding-left: 1.4rem; font-size: 0.78rem; }
     .section-heading {
       border-left: 4px solid #0d6efd;
       padding-left: 0.75rem;
@@ -49,7 +40,7 @@
 </head>
 <body>
 
-{# ── Macros ─────────────────────────────────────────────────────────────── #}
+{# Macros  #}
 {% macro badge(passed, true_label="PASS", false_label="FAIL") %}
   <span class="badge {% if passed %}bg-success{% else %}bg-danger{% endif %}">
     {{ true_label if passed else false_label }}
@@ -126,36 +117,9 @@
 <div class="container-fluid">
   <div class="row">
 
-    {# ── Sidebar ─────────────────────────────────────────────────────────── #}
-    <div class="col-lg-2 d-none d-lg-block py-3" id="sidebar">
-      <nav class="nav flex-column">
-        <a class="nav-link" href="#summary">Summary</a>
-        <a class="nav-link" href="#randomness">Randomness</a>
-        <a class="nav-link sub" href="#rand-sanity">Sanity Check</a>
-        <a class="nav-link sub" href="#rand-dist">Distribution Tests</a>
-        <a class="nav-link sub" href="#rand-entropy">Seed Entropy</a>
-        <a class="nav-link sub" href="#rand-nist-light">NIST Light</a>
-        {% if randomness.nist_in_depth %}
-        <a class="nav-link sub" href="#rand-nist-depth">NIST In-Depth</a>
-        {% endif %}
-        {% if randomness.entropy_monitoring %}
-        <a class="nav-link sub" href="#rand-monitor">Entropy Monitoring</a>
-        {% endif %}
-        <a class="nav-link" href="#security">Security</a>
-        <a class="nav-link" href="#transparency">Transparency</a>
-        {% if nper %}
-        <a class="nav-link" href="#nper">Non-Programmable</a>
-        {% endif %}
-        <a class="nav-link" href="#scorecard">Scorecard</a>
-      </nav>
-    </div>
+    <main class="col-12 py-4 px-4">
 
-    {# ── Main content ─────────────────────────────────────────────────────── #}
-    <main class="col-lg-10 py-4 px-4">
-
-      {# ════════════════════════════════════════════════════════════════════ #}
       {# Section 0: Summary                                                  #}
-      {# ════════════════════════════════════════════════════════════════════ #}
       <h2 class="section-heading" id="summary">Summary</h2>
       <div class="row g-3 mb-4">
 
@@ -178,7 +142,7 @@
 
         {% if security %}
         <div class="col-sm-6 col-xl-3">
-          <div class="card stat-card h-100" style="border-left-color:#198754">
+          <div class="card stat-card h-100" style="border-left-color:#1eab69">
             <div class="card-body">
               <h6 class="text-muted mb-1">Security</h6>
               {% if security.light %}
@@ -196,7 +160,7 @@
 
         {% if transparency %}
         <div class="col-sm-6 col-xl-3">
-          <div class="card stat-card h-100" style="border-left-color:#fd7e14">
+          <div class="card stat-card h-100" style="border-left-color:#e4eb17">
             <div class="card-body">
               <h6 class="text-muted mb-1">Transparency</h6>
               {% if transparency.light %}
@@ -214,7 +178,7 @@
 
         {% if nper %}
         <div class="col-sm-6 col-xl-3">
-          <div class="card stat-card h-100" style="border-left-color:#6f42c1">
+          <div class="card stat-card h-100" style="border-left-color:#4f2898">
             <div class="card-body">
               <h6 class="text-muted mb-1">Non-Programmable</h6>
               <div class="fs-5 fw-bold">{{ nper.mechanismId }}</div>
@@ -229,9 +193,9 @@
 
       </div>
 
-      {# ════════════════════════════════════════════════════════════════════ #}
+      
       {# Section 1: Randomness                                               #}
-      {# ════════════════════════════════════════════════════════════════════ #}
+      
       {% if randomness %}
       <h2 class="section-heading" id="randomness">Randomness Evaluation</h2>
 
@@ -426,9 +390,9 @@
 
       {% endif %}{# end randomness #}
 
-      {# ════════════════════════════════════════════════════════════════════ #}
+      
       {# Section 2: Security                                                 #}
-      {# ════════════════════════════════════════════════════════════════════ #}
+      
       {% if security %}
       <h2 class="section-heading" id="security">Security Evaluation</h2>
 
@@ -451,9 +415,9 @@
 
       {% endif %}
 
-      {# ════════════════════════════════════════════════════════════════════ #}
+      
       {# Section 3: Transparency                                             #}
-      {# ════════════════════════════════════════════════════════════════════ #}
+      
       {% if transparency %}
       <h2 class="section-heading" id="transparency">Transparency Evaluation</h2>
 
@@ -468,9 +432,9 @@
 
       {% endif %}
 
-      {# ════════════════════════════════════════════════════════════════════ #}
+      
       {# Section 4: Non-Programmable                                         #}
-      {# ════════════════════════════════════════════════════════════════════ #}
+      
       {% if nper %}
       <h2 class="section-heading" id="nper">Non-Programmable Checks</h2>
       <p class="text-muted small mb-3">Mechanism: <code>{{ nper.mechanismId }}</code></p>
@@ -934,30 +898,6 @@
 
       </div>{# end accordion #}
       {% endif %}{# end nper #}
-
-      {# ════════════════════════════════════════════════════════════════════ #}
-      {# Section 5: Combined Scorecard                                       #}
-      {# ════════════════════════════════════════════════════════════════════ #}
-      <h2 class="section-heading" id="scorecard">Combined Scorecard</h2>
-      <div class="card mb-5">
-        <div class="card-body p-0">
-          <table class="table table-hover mb-0">
-            <thead class="table-dark">
-              <tr><th>Domain</th><th>Metric</th><th>Value</th><th class="text-center">Result</th></tr>
-            </thead>
-            <tbody>
-              {% for row in scorecard.rows %}
-              <tr>
-                <td class="fw-semibold">{{ row.domain }}</td>
-                <td>{{ row.metric }}</td>
-                <td>{{ row.value }}</td>
-                <td class="text-center">{{ badge(row.passed) }}</td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      </div>
 
     </main>
   </div>

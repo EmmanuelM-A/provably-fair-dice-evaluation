@@ -90,11 +90,11 @@ def _parse_row(row: pd.Series, line_number: int) -> RollRecord | None:
     Returns None if any field is missing, null, or unparseable.
     """
     try:
-        outcome = int(row["outcome"])
-    except ValueError:
+        outcome = float(row["outcome"])
+    except (ValueError, TypeError):
         _logger.warning(
             f"Line {line_number} dropped because the 'outcome' is not a "
-            f"valid integer ({row['outcome']})."
+            f"valid number ({row['outcome']})."
         )
         return None
 
