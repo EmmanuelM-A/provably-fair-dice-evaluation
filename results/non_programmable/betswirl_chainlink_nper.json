@@ -1,0 +1,150 @@
+{
+    "mechanismId": "betswirl-chainlink-vrf-v2.5",
+
+    "bareSHA256Check": {
+        "isHmacSha256Used": true,
+        "evidence": "BetSwirl's dice contract does not use SHA-256 at all in the outcome derivation — the VRF word is mapped to an outcome purely via modulo arithmetic. There is no SHA-256 concatenation and therefore no length-extension attack surface. Our implementation wraps individual rolls in HMAC-SHA256, which is also secure."
+    },
+
+    "csprngCompliance": {
+        "isCsprngUsed": true,
+        "generatorName": "Chainlink VRF v2.5 (BLS-based verifiable random function)",
+        "isApprovedConstruction": true,
+        "evidence": "Chainlink VRF v2.5 uses an elliptic-curve VRF backed by the oracle's BLS key. The output is verifiably unbiased and unpredictable without the oracle private key. This is a stronger construction than a software CSPRNG."
+    },
+
+    "clientSeedGenerationSource": {
+        "generatedClientSide": false,
+        "evidence": "BetSwirl has no player-supplied client seed. Our implementation substitutes the consumer contract address as client_seed. The randomness query input is entirely controlled by the on-chain coordinator, not the player."
+    },
+
+    "commitmentTiming": {
+        "evidenceCategory": 1.0,
+        "evidenceDescription": "The VRF request transaction is committed on-chain before Chainlink responds with randomness. The requestId and block number are permanently recorded on Ethereum/Sepolia. The sequence of events is independently verifiable via a block explorer."
+    },
+
+    "attackVectorClassification": {
+        "dishonestOperator": {
+            "resisted": true,
+            "reasoning": "The operator submits a VRF request and cannot predict or choose the returned random word — it is produced by Chainlink's oracle using a key the operator does not control. The server seed for our HMAC session is derived directly from this VRF output."
+        },
+        "maliciousPlayer": {
+            "resisted": true,
+            "reasoning": "Players have no input into the randomness. There is no client seed they can craft to influence the VRF output. The contract controls the query input entirely."
+        },
+        "externalEavesdropper": {
+            "resisted": true,
+            "reasoning": "The VRF word is only revealed after the request is fulfilled on-chain. HMAC-SHA256 is used for per-roll derivation, which is computationally secure. Observing past outputs does not reveal the HMAC key."
+        },
+        "compromisedOracle": {
+            "resisted": false,
+            "reasoning": "If the Chainlink oracle node's private key is compromised, an attacker could generate valid-looking VRF proofs for chosen outputs. This is a known, documented trust assumption of all VRF-based systems."
+        }
+    },
+
+    "vrfQinpUniquenessEnforcement": {
+        "applicable": true,
+        "reqIdContractControlled": true,
+        "preseedComputedOnChain": true,
+        "blockHashReferencesFutureBlock": true,
+        "evidence": "Chainlink VRF v2.5 maintains an internal requestId counter in the coordinator contract — no user input influences it. The preseed = H(keyHash, subId, blockNum, sender, requestId) is computed on-chain, and the VRF proof incorporates a block hash from a block that did not exist at request submission time."
+    },
+
+    "drandFutureRoundCommitmentStrategy": {
+        "applicable": false,
+        "roundsTested": null,
+        "commitmentAnchorMandatory": null,
+        "contractPreventsEarlySettlement": null,
+        "failedRoundsCount": null,
+        "evidence": "Not applicable. This mechanism uses Chainlink VRF, not drand."
+    },
+
+    "dkgPhaseIntegrity": {
+        "applicable": false,
+        "keyConsistency": {
+            "allNodesAgreePostResharing": null,
+            "nodesChecked": null,
+            "evidence": "Not applicable. This mechanism uses Chainlink VRF, not drand."
+        },
+        "resharingRecency": {
+            "latestResharingTimestamp": null,
+            "acceptedThresholdDays": null,
+            "withinThreshold": null
+        }
+    },
+
+    "predictionResistance": {
+        "reseedingFrequency": "per_session",
+        "entropySourceQuality": "strong",
+        "entropySourceIndependentOfPrngState": true,
+        "evidence": "A fresh VRF request is made per session. The VRF output is produced by Chainlink's oracle using a private key independent of any local PRNG state. Even if an attacker observed the current session seed, future sessions produce entirely independent outputs."
+    },
+
+    "backwardsForwardStateInference": {
+        "usesOneOffSeedsPerRound": false,
+        "ifSharedPrngStateUpdateFormallyDocumented": true,
+        "ifSharedPrngStateUpdateProvablyOneWay": true,
+        "evidence": "All rolls within a session share the same HMAC key (the VRF word). HMAC-SHA256 is formally specified in FIPS 198-1 as a provably one-way construction. Knowing one roll's HMAC output does not reveal the key or allow computation of other rolls."
+    },
+
+    "nonceManagement": {
+        "initialisesAtZero": true,
+        "incrementsByOne": true,
+        "noResetWithoutSeedRotation": true,
+        "overflowPolicyDocumented": false,
+        "overflowPolicyDescription": null,
+        "evidence": "In our session-based implementation, the per-roll nonce starts at 0 and increments by 1. A new VRF session generates a fresh server seed, which constitutes a seed rotation. Nonce overflow behaviour is not explicitly documented."
+    },
+
+    "clientSeedRotationBehaviour": {
+        "defaultSeedSource": "server_side",
+        "rotationGuidanceAvailability": "none",
+        "rotationRecommendation": "not_specified",
+        "evidence": "BetSwirl provides no player-facing client seed. The consumer contract address is used as a fixed identifier. There is no rotation mechanism or guidance because the concept does not apply to this architecture."
+    },
+
+    "vrfSecurityAssessment": {
+        "applicable": true,
+        "outputManipulationResistance": {
+            "enforced": true,
+            "mechanism": "On-chain VRF proof verification by the Chainlink coordinator contract. The proof is cryptographically verified before randomWords are made available."
+        },
+        "queryInputUniqueness": {
+            "status": "contract_enforced",
+            "description": "The coordinator maintains an internal requestId counter. Players cannot influence the query input. Preseed is computed on-chain from contract-controlled parameters."
+        },
+        "selectiveNonFulfilmentResistance": {
+            "mitigated": true,
+            "mitigationMethod": "Chainlink's subscription model creates economic incentives to fulfil. Node operators lose LINK fees and reputation for non-fulfilment. Multiple independent oracle nodes compete for fulfilment."
+        },
+        "oracleKeySecurity": {
+            "cryptographicallyEnforced": false,
+            "description": "Oracle key security is a trust assumption. Chainlink nodes are operated by independent third parties, but there is no on-chain enforcement that prevents a compromised key from generating forged proofs."
+        }
+    },
+
+    "verificationTransparencyScores": {
+        "algorithmDisclosure": {
+            "score": 1.0,
+            "justification": "BetSwirl's dice formula (randomWords[0] % 100 + 1) is publicly documented, and Chainlink VRF's proof mechanism is fully specified in Chainlink's official documentation."
+        },
+        "entropySourceDisclosure": {
+            "score": 1.0,
+            "justification": "Chainlink VRF v2.5 is explicitly named as the randomness source, with full technical documentation including the VRF construction and oracle key management available at docs.chain.link."
+        },
+        "historicalAuditabilityWindow": {
+            "score": 1.0,
+            "justification": "All VRF requests and fulfillments are permanently recorded on-chain. Any requestId can be inspected indefinitely on Etherscan or equivalent block explorers."
+        },
+        "verificationToolAvailability": {
+            "inPlatformScore": 0.5,
+            "independentThirdPartyScore": 1.0,
+            "justification": "BetSwirl links to transaction hashes but provides no dedicated one-click verification tool. Independent verification is fully achievable via Etherscan — any user can look up the requestId, inspect the VRF proof, and recompute the outcome."
+        },
+        "verificationFriction": {
+            "expertPathScore": 1.0,
+            "nonExpertPathScore": 0.0,
+            "justification": "Experts can look up the on-chain VRF proof, confirm the fulfilled randomWords, and apply the modulo formula independently. Non-experts have no accessible guided path — reading on-chain data and understanding VRF proofs requires significant technical knowledge."
+        }
+    }
+}
