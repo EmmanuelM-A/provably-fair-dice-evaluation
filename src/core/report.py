@@ -8,7 +8,7 @@ import json
 import os
 from typing import List, Optional
 
-from src.config.configs import MAX_VALUE, REPORTS_DIRECTORY
+from src.config.configs import MAX_VALUE, NPER_DIRECTORY, PER_DIRECTORY, REPORTS_DIRECTORY, ROLLS_DIRECTORY
 from src.enigines.evaluation import EvaluationResult
 from src.enigines.report import ReportEngine
 from src.modules.data import BinaryResult, TestResult
@@ -157,29 +157,31 @@ def main() -> None:
         "--r",
         type=str,
         required=True,
-        help="The filepath to the programmable evaluation results (per) JSON"
+        help="The name of the programmable evaluation results (per) file (no extension)"
     )
     parser.add_argument(
         "--np",
         type=str,
         required=True,
-        help="The filepath to the non-programmable evaluation results (nper) JSON"
+        help="The name of the non-programmable evaluation results (nper) file (no extension)"
     )
     parser.add_argument(
         "--d",
         type=str,
         required=True,
-        help="The filepath to the generated rolls CSV"
+        help="The name of the generated rolls file (no extension)"
     )
     args = parser.parse_args()
 
-    programmable = _load_evaluation_result(args.r)
-    non_programmable = _load_nper(args.np)
-    rolls: List[RollRecord] = load_roll_records_from(args.d)
-    
-    filename = os.path.splitext(args.r)[0] + ".html"
+    per_filepath = f"{PER_DIRECTORY}/{args.r}.json"
+    nper_filepath = f"{NPER_DIRECTORY}/{args.np}.json"
+    rolls_filepath = f"{ROLLS_DIRECTORY}/{args.d}.csv"
 
-    output_path = os.path.join(REPORTS_DIRECTORY, filename)
+    programmable = _load_evaluation_result(per_filepath)
+    non_programmable = _load_nper(nper_filepath)
+    rolls: List[RollRecord] = load_roll_records_from(rolls_filepath)
+
+    output_path = os.path.join(REPORTS_DIRECTORY, f"{args.r}.html")
 
     engine = ReportEngine(output_path=output_path, n_faces=MAX_VALUE)
     report_path = engine.generate(
@@ -198,6 +200,6 @@ if __name__ == "__main__":
         --r  : The filepath to the programmable evaluation results (per) JSON - REQUIRED
         --np : The filepath to the non-programmable evaluation results (nper) JSON - REQUIRED
 
-    Usage: python -m src.core.report --r path/to/eval_results.json --d path/to/saved_rolls.csv --np path/to/nper.json
+    Usage: python -m src.core.report --r NAME --d NAME --np NAME
     """
     main()

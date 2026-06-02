@@ -22,6 +22,7 @@ run_all: python src.core.run_all --c COUNT --t TIER --d DATA_PATH --r RESULTS_PA
 
 import argparse
 
+from src.config.configs import ROLLS_DIRECTORY
 from src.core.get_inputs import get_mechanism
 from src.enigines.pfd import ProvablyFairDiceMechanism
 
@@ -41,12 +42,14 @@ def main():
         "--d",
         type=str,
         required=True,
-        help="The file path to save generated rolls",
+        help="The filename to save generated rolls as",
     )
     args = parser.parse_args()
     
+    filepath = f"{ROLLS_DIRECTORY}/{args.d}.csv"
+    
     # Get mechanism instance
-    mechanism: ProvablyFairDiceMechanism = get_mechanism(data_file_path=args.d)
+    mechanism: ProvablyFairDiceMechanism = get_mechanism(data_file_path=filepath)
     
     # Generate rolls and save to file
     mechanism.generate_rolls(quantity=args.c)

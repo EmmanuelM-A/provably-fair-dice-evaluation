@@ -22,6 +22,7 @@ run_all: python src.core.run_all --c COUNT --t TIER --d DATA_PATH --r RESULTS_PA
 import argparse
 from typing import List
 
+from src.config.configs import PER_DIRECTORY, ROLLS_DIRECTORY
 from src.core.get_inputs import get_evaluation_configs, get_mechanism, get_mechanism_mapping_fn
 from src.enigines.config import EvaluationConfig
 from src.enigines.evaluation import EvaluationEngine
@@ -55,18 +56,21 @@ def main():
     )
     args = parser.parse_args()
     
+    rolls_filepath = f"{ROLLS_DIRECTORY}/{args.d}.csv"
+    per_filepath = f"{PER_DIRECTORY}/{args.r}.json"
+    
     # Get mechanism instance and evaluation configs
-    mechanism: ProvablyFairDiceMechanism = get_mechanism(data_file_path=args.d)
+    mechanism: ProvablyFairDiceMechanism = get_mechanism(data_file_path=rolls_filepath)
     configs: EvaluationConfig = get_evaluation_configs()
     
     # Get generated rolls from file
-    rolls: List[RollRecord] = load_roll_records_from(file=args.d)
+    rolls: List[RollRecord] = load_roll_records_from(file=rolls_filepath)
     
     # Initialize evaluation engine
     engine = EvaluationEngine(
         mechanism=mechanism,
         config=configs,
-        results_file_path=args.r,
+        results_file_path=per_filepath,
     )
     
     # Run evaluation engine

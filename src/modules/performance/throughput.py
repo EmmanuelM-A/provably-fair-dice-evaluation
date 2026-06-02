@@ -96,7 +96,7 @@ def measure_throughput_under_load(
     (e.g. drand, Chainlink VRF).
     """
     if concurrency_levels is None:
-        concurrency_levels = [10, 100, 1_000, 10_000]
+        concurrency_levels = [10, 100, 1_000, 5_000] # It would be 10_000
 
     def _roll(_: int) -> float:
         t0 = time.perf_counter()

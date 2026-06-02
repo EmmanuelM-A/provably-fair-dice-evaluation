@@ -8,7 +8,7 @@ import json
 import os
 from typing import List, Optional
 
-from src.config.configs import MAX_VALUE, REPORTS_DIRECTORY
+from src.config.configs import MAX_VALUE, NPER_DIRECTORY, PER_DIRECTORY, REPORTS_DIRECTORY, ROLLS_DIRECTORY
 from src.core.get_inputs import get_evaluation_configs, get_mechanism, get_mechanism_mapping_fn
 from src.enigines.config import EvaluationConfig
 from src.enigines.evaluation import EvaluationEngine
@@ -37,24 +37,28 @@ def main() -> None:
         "--d",
         type=str,
         required=True,
-        help="The filepath to save the generated rolls CSV"
+        help="The name of the rolls file (no extension)"
     )
     parser.add_argument(
         "--r",
         type=str,
         required=True,
-        help="The filepath to save the programmable evaluation results (per) JSON"
+        help="The name of the programmable evaluation results (per) file (no extension)"
     )
     parser.add_argument(
         "--np",
         type=str,
         required=True,
-        help="The filepath to the non-programmable evaluation results (nper) JSON"
+        help="The name of the non-programmable evaluation results (nper) file (no extension)"
     )
     args = parser.parse_args()
 
+    rolls_filepath = f"{ROLLS_DIRECTORY}/{args.d}.csv"
+    per_filepath = f"{PER_DIRECTORY}/{args.r}.json"
+    nper_filepath = f"{NPER_DIRECTORY}/{args.np}.json"
+
     # Step 1: Generate rolls
-    mechanism: ProvablyFairDiceMechanism = get_mechanism(data_file_path=args.d)
+    mechanism: ProvablyFairDiceMechanism = get_mechanism(data_file_path=rolls_filepath)
     rolls: List[RollRecord] = mechanism.generate_rolls(quantity=args.c)
 
     # Step 2: Evaluate
@@ -62,7 +66,7 @@ def main() -> None:
     eval_engine = EvaluationEngine(
         mechanism=mechanism,
         config=configs,
-        results_file_path=args.r,
+        results_file_path=per_filepath,
     )
     result = eval_engine.run_evaluation(
         rolls=rolls,
@@ -71,12 +75,10 @@ def main() -> None:
     )
 
     # Step 3: Generate report
-    with open(args.np, "r", encoding="utf-8") as f:
+    with open(nper_filepath, "r", encoding="utf-8") as f:
         non_programmable = json.load(f)
 
-    filename = os.path.splitext(args.r)[0] + ".html"
-
-    output_path = os.path.join(REPORTS_DIRECTORY, filename)
+    output_path = os.path.join(REPORTS_DIRECTORY, f"{args.r}.html")
 
     report_engine = ReportEngine(output_path=output_path, n_faces=MAX_VALUE)
     report_path = report_engine.generate(
@@ -96,6 +98,6 @@ if __name__ == "__main__":
         --r  : The filepath to save the programmable evaluation results (per) JSON - REQUIRED
         --np : The filepath to the non-programmable evaluation results (nper) JSON - REQUIRED
         
-    Usage: python -m src.core.run --c quantity --d path/to/save_rolls.csv --r path/to/per.json --np path/to/nper.json
+    Usage: python -m src.core.run --c COUNT --d NAME --r NAME --np NAME
     """
     main()
