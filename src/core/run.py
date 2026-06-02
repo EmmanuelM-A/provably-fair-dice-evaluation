@@ -1,16 +1,6 @@
 """
-Full pipeline runner — generates rolls, evaluates them, and produces the HTML report in one command.
-
-Usage:
-    python -m src.core.run --d DATA_PATH --r RESULTS_PATH [--c COUNT] [--t TIER] [--np NPER_PATH] [--o REPORT_PATH]
-
-Args:
-    --c  : Number of rolls to generate (default: 1000)
-    --t  : Evaluation depth tier — LIGHT | IN_DEPTH | FULL_DEPTH (default: LIGHT)
-    --d  : Path to save the generated rolls CSV (required)
-    --r  : Path to save the evaluation results JSON (required)
-    --np : Path to an existing non-programmable evaluation results JSON (optional)
-    --o  : Output path for the HTML report (optional; defaults to --r with .html extension)
+The standalone script to run the full pipeline: generate rolls, evaluate them
+and produce the HTML report in one command.
 """
 
 import argparse
@@ -18,7 +8,7 @@ import json
 import os
 from typing import List, Optional
 
-from src.config.configs import MAX_VALUE
+from src.config.configs import MAX_VALUE, REPORTS_DIRECTORY
 from src.core.get_inputs import get_evaluation_configs, get_mechanism, get_mechanism_mapping_fn
 from src.enigines.config import EvaluationConfig
 from src.enigines.evaluation import EvaluationEngine
@@ -28,21 +18,35 @@ from src.utils.types import RollRecord
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="PFDM Full Pipeline Runner")
-    parser.add_argument("--c", type=int, default=1000, help="Number of rolls to generate (default: 1000)")
-    parser.add_argument(
-        "--t",
-        choices=["LIGHT", "IN_DEPTH", "FULL_DEPTH"],
-        default="LIGHT",
-        help="Evaluation depth tier (default: LIGHT)",
+    parser = argparse.ArgumentParser(
+        description="PFDM Full Pipeline Runner"
     )
-    parser.add_argument("--d", type=str, required=True, help="Path to save generated rolls CSV")
-    parser.add_argument("--r", type=str, required=True, help="Path to save evaluation results JSON")
-    parser.add_argument("--np", type=str, required=False, default=None, help="Path to non-programmable evaluation results JSON")
-    parser.add_argument("--o", type=str, required=False, default=None, help="Output path for the HTML report")
+    parser.add_argument(
+        "--c",
+        type=int,
+        default=1000,
+        help="Number of rolls to generate (default: 1000)"
+    )
+    parser.add_argument(
+        "--d",
+        type=str,
+        required=True,
+        help="Path to save generated rolls CSV"
+    )
+    parser.add_argument(
+        "--r",
+        type=str,
+        required=True,
+        help="Path to save evaluation results JSON"
+    )
+    parser.add_argument(
+        "--np",
+        type=str,
+        required=True,
+        default=None,
+        help="Path to non-programmable evaluation results JSON"
+    )
     args = parser.parse_args()
-
-    output_path = args.o or os.path.splitext(args.r)[0] + ".html"
 
     # Step 1: Generate rolls
     mechanism: ProvablyFairDiceMechanism = get_mechanism(data_file_path=args.d)
@@ -61,17 +65,20 @@ def main() -> None:
         mapping_fn=get_mechanism_mapping_fn(),
     )
 
-    # Step 3: Generate report (non-programmable results are optional manual input)
-    non_programmable: Optional[dict] = None
-    if args.np and os.path.exists(args.np):
-        with open(args.np, "r", encoding="utf-8") as f:
-            non_programmable = json.load(f)
+    # Step 3: Generate report
+    with open(args.np, "r", encoding="utf-8") as f:
+        non_programmable = json.load(f)
+
+    output_path = os.path.join(
+        REPORTS_DIRECTORY,
+        f"{result.mechanism_id}_eval_report.html"
+    )
 
     report_engine = ReportEngine(output_path=output_path, n_faces=MAX_VALUE)
     report_path = report_engine.generate(
         programmable=result,
         rolls=rolls,
-        tier=args.t,
+        tier=result.tier,
         non_programmable=non_programmable,
     )
     print(f"Report generated: {report_path}")
@@ -79,6 +86,12 @@ def main() -> None:
 
 if __name__ == "__main__":
     """
-    Usage: python -m src.core.run --d path/to/rolls.csv --r path/to/results.json --np path/to/nper.json
+    Args:
+        --c  : The number of rolls to generate (default: 1000)
+        --d  : The filepath to save the generated rolls CSV - REQUIRED
+        --r  : The filepath to save the programmable evaluation results (per) JSON - REQUIRED
+        --np : The filepath to the non-programmable evaluation results (nper) JSON - REQUIRED
+        
+    Usage: python -m src.core.run --c quantity --d path/to/save_rolls.csv --r path/to/per.json --np path/to/nper.json
     """
     main()
