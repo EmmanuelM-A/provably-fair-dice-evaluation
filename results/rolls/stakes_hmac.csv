@@ -1,0 +1,2 @@
+server_seed,client_seed,nonce,raw_output,outcome,timestamp,mechanism_id
+1377e7c64c64a7bb1f2edf30aac0a7676103a41213b7a3dee348f734968d5c7d,example-client-seed-12345,1,befe5f2ca0ed3e1a89a008cc4f4e95dc1bceed8bb923e1504bf254aa7fcca18a,74.61,2026-06-02T18:44:11.138167+00:00,hmac-sha256

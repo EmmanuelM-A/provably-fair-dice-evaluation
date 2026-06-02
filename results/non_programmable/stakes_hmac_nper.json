@@ -1,0 +1,150 @@
+{
+    "mechanismId": "hmac-sha256",
+
+    "bareSHA256Check": {
+        "isHmacSha256Used": true,
+        "evidence": "Stake explicitly uses HMAC-SHA256 with the server_seed as the key and '{client_seed}:{nonce}:{cursor}' as the message. This is documented on their provably fair page. No bare SHA-256 concatenation is used at any stage of the outcome derivation."
+    },
+
+    "csprngCompliance": {
+        "isCsprngUsed": true,
+        "generatorName": "os.urandom (OS-level CSPRNG)",
+        "isApprovedConstruction": true,
+        "evidence": "Server seeds are generated via os.urandom(32), which draws from the OS kernel's CSPRNG (/dev/urandom on Linux, CryptGenRandom on Windows). This is an approved construction per NIST SP 800-90A and is not susceptible to state reconstruction attacks."
+    },
+
+    "clientSeedGenerationSource": {
+        "generatedClientSide": false,
+        "evidence": "Stake generates a random default client seed server-side on the player's behalf. Players can replace it with any value they choose via the UI, but the default is not player-generated. This gives Stake the technical capability to know the default client seed before it is used."
+    },
+
+    "commitmentTiming": {
+        "evidenceCategory": 0.0,
+        "evidenceDescription": "Stake publishes the SHA-256 hash of the server seed before play begins, but this commitment exists only on Stake's own servers. There is no on-chain timestamp, no third-party certificate, and no external record to independently confirm the hash was published before the player's client seed was received. Trust in the ordering of events is entirely based on Stake's word."
+    },
+
+    "attackVectorClassification": {
+        "dishonestOperator": {
+            "resisted": false,
+            "reasoning": "The server seed commitment is self-reported by Stake with no external verification. A dishonest operator could in principle wait to see a player's client seed before selecting and committing a server seed. There is no independent mechanism to prove the commitment preceded the client seed submission."
+        },
+        "maliciousPlayer": {
+            "resisted": true,
+            "reasoning": "The server seed is unknown to the player at bet time — only its SHA-256 hash is shown. Without the pre-image, the player cannot compute outcomes for any client seed or nonce combination, regardless of what client seed they choose."
+        },
+        "externalEavesdropper": {
+            "resisted": true,
+            "reasoning": "HMAC-SHA256 is computationally secure. An eavesdropper observing the published outcome cannot derive the server seed key from the HMAC output."
+        },
+        "compromisedOracle": {
+            "resisted": true,
+            "reasoning": "No external oracle is used. Stake generates all randomness internally via os.urandom. There is no oracle attack surface — though this shifts all trust to Stake's own infrastructure security."
+        }
+    },
+
+    "vrfQinpUniquenessEnforcement": {
+        "applicable": false,
+        "reqIdContractControlled": null,
+        "preseedComputedOnChain": null,
+        "blockHashReferencesFutureBlock": null,
+        "evidence": "Not applicable. This is an off-chain HMAC mechanism with no VRF or smart contract involved."
+    },
+
+    "drandFutureRoundCommitmentStrategy": {
+        "applicable": false,
+        "roundsTested": null,
+        "commitmentAnchorMandatory": null,
+        "contractPreventsEarlySettlement": null,
+        "failedRoundsCount": null,
+        "evidence": "Not applicable. This mechanism uses off-chain HMAC, not drand."
+    },
+
+    "dkgPhaseIntegrity": {
+        "applicable": false,
+        "keyConsistency": {
+            "allNodesAgreePostResharing": null,
+            "nodesChecked": null,
+            "evidence": "Not applicable. This mechanism uses off-chain HMAC, not drand."
+        },
+        "resharingRecency": {
+            "latestResharingTimestamp": null,
+            "acceptedThresholdDays": null,
+            "withinThreshold": null
+        }
+    },
+
+    "predictionResistance": {
+        "reseedingFrequency": "per_session",
+        "entropySourceQuality": "strong",
+        "entropySourceIndependentOfPrngState": true,
+        "evidence": "A fresh server seed is drawn from os.urandom(32) at the start of each session. os.urandom pulls entropy from the OS kernel pool, which is independent of the HMAC derivation state. Knowing the current session's outcomes tells an attacker nothing about the next session's server seed."
+    },
+
+    "backwardsForwardStateInference": {
+        "usesOneOffSeedsPerRound": false,
+        "ifSharedPrngStateUpdateFormallyDocumented": true,
+        "ifSharedPrngStateUpdateProvablyOneWay": true,
+        "evidence": "All rolls within a session share the same HMAC key (server_seed). HMAC-SHA256 is formally specified in FIPS 198-1 as a provably one-way MAC construction. Knowing any roll's raw_output does not allow an attacker to recover the server_seed or compute other rolls. Once the server_seed is disclosed post-session, all that session's outcomes become computable — this is intentional and necessary for player verification."
+    },
+
+    "nonceManagement": {
+        "initialisesAtZero": true,
+        "incrementsByOne": true,
+        "noResetWithoutSeedRotation": true,
+        "overflowPolicyDocumented": false,
+        "overflowPolicyDescription": null,
+        "evidence": "Stake's published algorithm starts the nonce at 0 and increments by 1 for every bet within a session. When a player requests a new server seed, the nonce resets to 0 alongside a fresh server_seed — this counts as seed rotation so the (server_seed, client_seed, nonce) triple remains unique. Stake does not document what happens if the nonce reaches the maximum integer value."
+    },
+
+    "clientSeedRotationBehaviour": {
+        "defaultSeedSource": "server_side",
+        "rotationGuidanceAvailability": "present",
+        "rotationRecommendation": "per_session",
+        "evidence": "Stake generates a random default client seed on behalf of the player and displays it in the UI. Players can change it at any time. Stake's documentation recommends rotating both the server seed and client seed together when starting a new session, and the UI makes this straightforward."
+    },
+
+    "vrfSecurityAssessment": {
+        "applicable": false,
+        "outputManipulationResistance": {
+            "enforced": null,
+            "mechanism": "Not applicable. This is an off-chain mechanism with no VRF."
+        },
+        "queryInputUniqueness": {
+            "status": "unspecified",
+            "description": "Not applicable."
+        },
+        "selectiveNonFulfilmentResistance": {
+            "mitigated": null,
+            "mitigationMethod": null
+        },
+        "oracleKeySecurity": {
+            "cryptographicallyEnforced": null,
+            "description": "Not applicable."
+        }
+    },
+
+    "verificationTransparencyScores": {
+        "algorithmDisclosure": {
+            "score": 1.0,
+            "justification": "Stake fully discloses the HMAC-SHA256 construction, message format (client_seed:nonce:cursor), bytes_to_number formula, and the floor(x * 10001) / 100 outcome mapping on their provably fair page. Everything needed to independently reproduce a result is published."
+        },
+        "entropySourceDisclosure": {
+            "score": 0.5,
+            "justification": "Stake states that server seeds are randomly generated but does not explicitly name the generator (e.g. os.urandom, /dev/urandom, or HMAC-DRBG). The CSPRNG type and seeding mechanism are not named in their public documentation."
+        },
+        "historicalAuditabilityWindow": {
+            "score": 0.5,
+            "justification": "Past outcomes and seed pairs are accessible via Stake's provably fair page after the server seed is revealed, but no explicit minimum retention period is stated. There is no permanent external log — if Stake deletes records, they are gone."
+        },
+        "verificationToolAvailability": {
+            "inPlatformScore": 1.0,
+            "independentThirdPartyScore": 0.5,
+            "justification": "Stake provides a built-in verification tool on their provably fair page where players enter the seed pair and nonce and get the outcome confirmed. Several unofficial third-party calculators exist but are not maintained by Stake and cannot be considered authoritative."
+        },
+        "verificationFriction": {
+            "expertPathScore": 1.0,
+            "nonExpertPathScore": 1.0,
+            "justification": "Stake's in-platform verification tool is accessible to anyone — enter your seeds and nonce, click verify. Experts can also independently replicate the HMAC computation using any standard library. Both paths are low friction."
+        }
+    }
+}

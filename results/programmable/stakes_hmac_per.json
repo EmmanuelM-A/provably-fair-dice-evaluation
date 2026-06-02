@@ -1,0 +1,353 @@
+{
+    "mechanism": "HMAC-SHA256 Mechanism",
+    "tier": "IN_DEPTH",
+    "saved_at": "2026-06-02 18:43:40",
+    "randomness": {
+        "n_rolls": 1000,
+        "n_bits": 256000,
+        "light": {
+            "sanity_check": {
+                "passed": true,
+                "chi_square_stat": 102.6,
+                "p_value": 0.382064542659265,
+                "message": "Sanity check passed: outcomes appear uniform (chi2=102.60, p=3.8206e-01)."
+            },
+            "cramer_von_mises": {
+                "test_name": "Cramer-von Mises Uniformity Test",
+                "p_value": 0.16831714745041482,
+                "passed": true,
+                "parameters_used": {
+                    "n_rolls": 1000,
+                    "obs_min": 0.0,
+                    "obs_max": 99.0,
+                    "statistic": 0.26668799102132446,
+                    "normalisation": "(outcome - obs_min) / (obs_max - obs_min)",
+                    "reference_cdf": "uniform(0, 1)"
+                }
+            },
+            "runs_independence": {
+                "test_name": "Runs Independence Test",
+                "p_value": 0.2555223429751079,
+                "passed": true,
+                "parameters_used": {
+                    "n_rolls": 1000,
+                    "median": 52.0,
+                    "n_above_median": 496,
+                    "n_below_or_equal_median": 504,
+                    "observed_runs": 483,
+                    "expected_runs": 500.968,
+                    "variance_runs": 249.71775077477477,
+                    "z_statistic": -1.1370381374905991
+                }
+            },
+            "server_seed_min_entropy": {
+                "test_name": "server_seed_min_entropy",
+                "passed": false,
+                "message": "Server seed min-entropy -0.0000 bits is below the threshold of 8.0 bits \u2014 entropy source may be degraded.",
+                "details": {
+                    "n_seeds": 1000,
+                    "n_unique_seeds": 1,
+                    "max_observed_frequency": 1000,
+                    "min_entropy_bits": -0.0,
+                    "threshold_bits": 8.0,
+                    "sample_bound_bits": 9.9658
+                }
+            },
+            "nist_light": {
+                "frequency_monobit": {
+                    "test_name": "Frequency (Monobit) Test",
+                    "p_value": 0.10256875910801852,
+                    "passed": true,
+                    "parameters_used": {
+                        "n": 256000,
+                        "s_obs": 1.632525842061926
+                    }
+                },
+                "frequency_block": {
+                    "test_name": "Frequency within a Block",
+                    "p_value": 0.6244483599620798,
+                    "passed": true,
+                    "parameters_used": {
+                        "n": 256000,
+                        "M": 128,
+                        "N": 2000,
+                        "chi_sq": 1979.34375
+                    }
+                },
+                "runs": {
+                    "test_name": "Runs Test",
+                    "p_value": 0.19569683340156477,
+                    "passed": true,
+                    "parameters_used": {
+                        "n": 256000,
+                        "pi": 0.49838671875,
+                        "v_obs": 128326
+                    }
+                },
+                "longest_run_ones": {
+                    "test_name": "Longest Run of Ones in a Block",
+                    "p_value": 0.3040809128182933,
+                    "passed": true,
+                    "parameters_used": {
+                        "n": 256000,
+                        "M": 8,
+                        "N": 32000,
+                        "chi_sq": 3.6316802277146536
+                    }
+                },
+                "binary_matrix_rank": {
+                    "test_name": "Binary Matrix Rank Test",
+                    "p_value": 0.32056752177890413,
+                    "passed": true,
+                    "parameters_used": {
+                        "n": 256000,
+                        "M": 32,
+                        "Q": 32,
+                        "num_matrices": 250,
+                        "chi_sq": 2.275324696866656
+                    }
+                },
+                "dft_spectral": {
+                    "test_name": "Discrete Fourier Transform (Spectral) Test",
+                    "p_value": 0.4041132545751148,
+                    "passed": true,
+                    "parameters_used": {
+                        "n": 256000,
+                        "threshold": 875.7325288831059,
+                        "n_below_threshold": 121646,
+                        "expected_below_threshold": 121600.0
+                    }
+                },
+                "cumulative_sums": {
+                    "test_name": "Cumulative Sums Test",
+                    "p_value": 0.11195734710082483,
+                    "passed": true,
+                    "parameters_used": {
+                        "n": 256000,
+                        "p_value_forward": 0.1783649320839853,
+                        "p_value_backward": 0.11195734710082483
+                    }
+                }
+            }
+        },
+        "in_depth": {
+            "entropy_monitoring": {
+                "repetition_count": {
+                    "alarms_triggered": 0,
+                    "alarm_positions": [],
+                    "passed": true,
+                    "parameters_used": {
+                        "n_samples": 1000,
+                        "threshold_c": 20
+                    }
+                },
+                "adaptive_proportion": {
+                    "alarms_triggered": 0,
+                    "alarm_positions": [],
+                    "passed": true,
+                    "parameters_used": {
+                        "n_samples": 1000,
+                        "window_w": 512,
+                        "threshold": 120
+                    }
+                }
+            },
+            "nist_in_depth": null
+        },
+        "full_depth": null
+    },
+    "security": {
+        "n_rolls": 1000,
+        "light": {
+            "seed_reuse": {
+                "test_name": "seed_reuse",
+                "passed": false,
+                "message": "1 server seed(s) reused; 1 client seed(s) reused.",
+                "details": {
+                    "n_records": 1000,
+                    "n_reused_server_seeds": 1,
+                    "n_reused_client_seeds": 1
+                }
+            },
+            "nonce_presence": {
+                "test_name": "nonce_presence",
+                "passed": true,
+                "message": "All 1000 records have a non-zero nonce.",
+                "details": {
+                    "n_records": 1000,
+                    "n_missing": 0
+                }
+            },
+            "nonce_uniqueness": {
+                "test_name": "nonce_uniqueness",
+                "passed": true,
+                "message": "All 1000 nonce values are unique.",
+                "details": {
+                    "n_records": 1000,
+                    "n_duplicate_nonces": 0,
+                    "n_duplicate_rolls": 0
+                }
+            },
+            "nonce_min_entropy": 9.965784284662087,
+            "summary": {
+                "seed_reuse": false,
+                "nonce_presence": true,
+                "nonce_uniqueness": true,
+                "nonce_min_entropy_bits": 9.9658
+            }
+        },
+        "in_depth": null,
+        "full_depth": null
+    },
+    "performance": {
+        "light": {
+            "latency": {
+                "test_name": "dice_generation_latency",
+                "n_requests": 1000,
+                "mean_ms": 0.27720730006694794,
+                "median_ms": 0.26449980214238167,
+                "p75_ms": 0.2764998935163021,
+                "p90_ms": 0.3028199775144458,
+                "p99_ms": 0.5057540070265529,
+                "min_ms": 0.24550012312829494,
+                "max_ms": 1.0816000867635012,
+                "std_ms": 0.05186055513787044
+            },
+            "summary": {
+                "mean_latency_ms": 0.2772,
+                "p99_latency_ms": 0.5058
+            }
+        },
+        "in_depth": {
+            "startup_steady_state": {
+                "test_name": "startup_vs_steady_state",
+                "n_requests": 10000,
+                "cov_threshold": 0.02,
+                "startup_n": 10000,
+                "startup_mean_ms": 2.983752789511345,
+                "startup_std_ms": 0.7430057524606843,
+                "steady_state_n": 0,
+                "steady_state_mean_ms": 0.0,
+                "steady_state_std_ms": 0.0,
+                "steady_state_cov": 0.0,
+                "steady_state_declared_at": -1
+            },
+            "throughput_under_load": {
+                "10": {
+                    "concurrency": 10,
+                    "actual_workers": 10,
+                    "n_requests": 200,
+                    "requests_per_second": 2042.7506865727823,
+                    "mean_latency_ms": 4.591228995705023,
+                    "p99_latency_ms": 6.0678479820489875
+                },
+                "100": {
+                    "concurrency": 100,
+                    "actual_workers": 100,
+                    "n_requests": 200,
+                    "requests_per_second": 1716.4833030572881,
+                    "mean_latency_ms": 40.90903099393472,
+                    "p99_latency_ms": 52.811719162855255
+                },
+                "1000": {
+                    "concurrency": 1000,
+                    "actual_workers": 200,
+                    "n_requests": 200,
+                    "requests_per_second": 1588.2646296964067,
+                    "mean_latency_ms": 56.634825004730374,
+                    "p99_latency_ms": 72.81047303928062
+                },
+                "5000": {
+                    "concurrency": 5000,
+                    "actual_workers": 200,
+                    "n_requests": 200,
+                    "requests_per_second": 1598.1985103176862,
+                    "mean_latency_ms": 55.42339798877947,
+                    "p99_latency_ms": 73.58110185246915
+                }
+            },
+            "summary": {
+                "steady_state_reached": false,
+                "steady_state_mean_ms": 0.0,
+                "peak_requests_per_second": 2042.75
+            }
+        },
+        "full_depth": null
+    },
+    "transparency": {
+        "n_rolls": 1000,
+        "light": {
+            "determinism": {
+                "test_name": "determinism",
+                "passed": false,
+                "message": "991 of 1000 record(s) failed to reproduce. Disclosure integrity failure \u2014 further investigation required.",
+                "details": {
+                    "n_records": 1000,
+                    "n_passed": 9,
+                    "n_mismatches": 991,
+                    "mismatch_indices": [
+                        0,
+                        1,
+                        2,
+                        3,
+                        4,
+                        5,
+                        6,
+                        7,
+                        8,
+                        9,
+                        10,
+                        11,
+                        12,
+                        13,
+                        14,
+                        15,
+                        16,
+                        17,
+                        18,
+                        19
+                    ]
+                }
+            },
+            "mapping_reproducibility": {
+                "test_name": "outcome_mapping_reproducibility",
+                "passed": false,
+                "message": "991 outcome mismatch(es) detected.",
+                "details": {
+                    "n_records": 1000,
+                    "n_passed": 9,
+                    "n_mismatches": 991,
+                    "n_mapping_errors": 0,
+                    "mismatch_indices": [
+                        0,
+                        1,
+                        2,
+                        3,
+                        4,
+                        5,
+                        6,
+                        7,
+                        8,
+                        9,
+                        10,
+                        11,
+                        12,
+                        13,
+                        14,
+                        15,
+                        16,
+                        17,
+                        18,
+                        19
+                    ]
+                }
+            },
+            "summary": {
+                "determinism": false,
+                "mapping_reproducibility": false
+            }
+        },
+        "in_depth": null,
+        "full_depth": null
+    }
+}
