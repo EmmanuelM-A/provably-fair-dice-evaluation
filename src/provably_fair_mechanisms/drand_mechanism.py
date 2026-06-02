@@ -65,7 +65,6 @@ class BlockRandDrandMechanism(ProvablyFairDiceMechanism):
     - raw_output  : SHA256(player_secret:server_secret:drand_signature).
     - outcome     : rejection_sampling(raw_output), range [1.0, 100.0].
     """
-
     # ========================= MECHANISM SPECIFIC =========================
 
     _CHAIN_HASH = "52db9ba70e0cc0f6eaf7803dd07447a1f5477735fd3f661792ba94600c84e971"
