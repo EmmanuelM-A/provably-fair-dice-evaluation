@@ -8,7 +8,7 @@ import json
 import os
 from typing import List, Optional
 
-from src.config.configs import MAX_VALUE, NPER_DIRECTORY, PER_DIRECTORY, REPORTS_DIRECTORY, ROLLS_DIRECTORY
+from src.config.configs import MAX_VALUE, NPER_DIRECTORY, PER_DIRECTORY, PROJECT_ROOT, REPORTS_DIRECTORY, ROLLS_DIRECTORY
 from src.enigines.evaluation import EvaluationResult
 from src.enigines.report import ReportEngine
 from src.modules.data import BinaryResult, TestResult
@@ -171,6 +171,12 @@ def main() -> None:
         required=True,
         help="The name of the generated rolls file (no extension)"
     )
+    parser.add_argument(
+        "--o",
+        type=str,
+        required=False,
+        help="The name of the output report file (no extension). Defaults to the same name as the per file.",
+    )
     args = parser.parse_args()
 
     per_filepath = f"{PER_DIRECTORY}/{args.r}.json"
@@ -180,8 +186,10 @@ def main() -> None:
     programmable = _load_evaluation_result(per_filepath)
     non_programmable = _load_nper(nper_filepath)
     rolls: List[RollRecord] = load_roll_records_from(rolls_filepath)
+    
+    filename = args.o if args.o else args.r
 
-    output_path = os.path.join(REPORTS_DIRECTORY, f"{args.r}.html")
+    output_path = os.path.join(REPORTS_DIRECTORY, f"{filename}.html")
 
     engine = ReportEngine(output_path=output_path, n_faces=MAX_VALUE)
     report_path = engine.generate(
@@ -190,7 +198,7 @@ def main() -> None:
         tier=programmable.tier,
         non_programmable=non_programmable,
     )
-    print(f"Report generated: {report_path}")
+    print(f"Report generated: {os.path.relpath(report_path, PROJECT_ROOT)}")
 
 
 if __name__ == "__main__":
@@ -199,7 +207,8 @@ if __name__ == "__main__":
         --d  : The filepath to the generated rolls CSV - REQUIRED
         --r  : The filepath to the programmable evaluation results (per) JSON - REQUIRED
         --np : The filepath to the non-programmable evaluation results (nper) JSON - REQUIRED
+        --o  : The filepath to save the generated report HTML - OPTIONAL (defaults to reports/{per_filename}.html)
 
-    Usage: python -m src.core.report --r NAME --d NAME --np NAME
+    Usage: python -m src.core.report --r NAME --d NAME --np NAME --o NAME
     """
     main()
