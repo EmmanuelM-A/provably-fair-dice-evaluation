@@ -104,7 +104,8 @@ if __name__ == "__main__":
         --d  : The filepath to save the generated rolls CSV - REQUIRED
         --r  : The filepath to save the programmable evaluation results (per) JSON - REQUIRED
         --np : The filepath to the non-programmable evaluation results (nper) JSON - REQUIRED
+        --o  : The filename for the output report (no extension). 
         
-    Usage: python -m src.core.run --c COUNT --d NAME --r NAME --np NAME
+    Usage: python -m src.core.run --c COUNT --d NAME --r NAME --np NAME --o filename
     """
     main()
