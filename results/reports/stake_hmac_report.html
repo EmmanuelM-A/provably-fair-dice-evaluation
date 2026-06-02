@@ -1,0 +1,1260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HMAC-SHA256 Mechanism — Evaluation Report</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
+  <style>
+    body { background: #f8f9fa; }
+    .section-heading {
+      border-left: 4px solid #0d6efd;
+      padding-left: 0.75rem;
+      margin: 2rem 0 1rem;
+    }
+    .sub-heading {
+      border-left: 3px solid #6ea8fe;
+      padding-left: 0.6rem;
+      margin: 1.5rem 0 0.75rem;
+      font-size: 1rem;
+    }
+    .stat-card { border-left: 4px solid #0d6efd; }
+    .chart-container { position: relative; height: 260px; }
+    .chart-container-lg { position: relative; height: 360px; }
+    .param-table td, .param-table th { font-size: 0.8rem; }
+    .enum-tag {
+      display: inline-block;
+      padding: 0.2em 0.55em;
+      border-radius: 0.3rem;
+      font-size: 0.78rem;
+      font-weight: 600;
+      background: #e9ecef;
+      color: #495057;
+    }
+    .nper-accordion .accordion-button { font-size: 0.9rem; }
+    .attack-grid td { font-size: 0.82rem; vertical-align: middle; }
+    .p-val { font-family: monospace; font-size: 0.85rem; }
+  </style>
+</head>
+<body>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<nav class="navbar navbar-dark bg-dark px-4 py-3">
+  <span class="navbar-brand mb-0 h5">HMAC-SHA256 Mechanism</span>
+  <div class="d-flex gap-3 align-items-center">
+    <span class="badge bg-primary fs-6">LIGHT</span>
+    <span class="text-light small">2026-06-02 22:47:30</span>
+  </div>
+</nav>
+
+<div class="container-fluid">
+  <div class="row">
+
+    <main class="col-12 py-4 px-4">
+
+      
+      
+      
+      <h2 class="section-heading" id="summary">Summary</h2>
+      <div class="row g-3 mb-4">
+
+        
+        <div class="col-sm-6 col-xl-3">
+          <div class="card stat-card h-100">
+            <div class="card-body">
+              <h6 class="text-muted mb-1">Randomness</h6>
+              <div class="fs-5 fw-bold">1000 rolls</div>
+              <div class="small text-muted">256000 bits</div>
+              
+                
+                
+                <div class="mt-2">NIST Light: 7/7 
+  <span class="badge bg-success">
+    PASS
+  </span>
+</div>
+              
+            </div>
+          </div>
+        </div>
+        
+
+        
+        <div class="col-sm-6 col-xl-3">
+          <div class="card stat-card h-100" style="border-left-color:#198754">
+            <div class="card-body">
+              <h6 class="text-muted mb-1">Security</h6>
+              
+                
+                
+                <div class="fs-5 fw-bold">2/3 checks</div>
+                <div class="mt-2">
+  <span class="badge bg-danger">
+    FAIL
+  </span>
+</div>
+              
+            </div>
+          </div>
+        </div>
+        
+
+        
+        <div class="col-sm-6 col-xl-3">
+          <div class="card stat-card h-100" style="border-left-color:#fd7e14">
+            <div class="card-body">
+              <h6 class="text-muted mb-1">Transparency</h6>
+              
+                
+                
+                <div class="fs-5 fw-bold">2/2 checks</div>
+                <div class="mt-2">
+  <span class="badge bg-success">
+    PASS
+  </span>
+</div>
+              
+            </div>
+          </div>
+        </div>
+        
+
+        
+        <div class="col-sm-6 col-xl-3">
+          <div class="card stat-card h-100" style="border-left-color:#6f42c1">
+            <div class="card-body">
+              <h6 class="text-muted mb-1">Non-Programmable</h6>
+              <div class="fs-5 fw-bold">hmac-sha256</div>
+              
+                
+                <div class="small mt-1">Avg transparency score: 0.79</div>
+              
+            </div>
+          </div>
+        </div>
+        
+
+      </div>
+
+      
+      
+      
+      
+      <h2 class="section-heading" id="randomness">Randomness Evaluation</h2>
+
+      <div class="row g-2 mb-3">
+        <div class="col-auto">
+          <span class="badge bg-light text-dark border">Rolls: 1000</span>
+        </div>
+        <div class="col-auto">
+          <span class="badge bg-light text-dark border">Bits: 256000</span>
+        </div>
+      </div>
+
+      
+      
+      <h3 class="sub-heading" id="rand-sanity">Sanity Check</h3>
+      <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center py-2">
+          <span class="fw-semibold">Chi-Square Biased Die Rejection</span>
+          
+  <span class="badge bg-success">
+    PASS
+  </span>
+
+        </div>
+        <div class="card-body py-2">
+          <p class="mb-2 text-muted small">Sanity check passed: outcomes appear uniform (chi2=90.60, p=7.1464e-01).</p>
+          <div class="row g-3">
+            <div class="col-auto">
+              <div class="text-muted small">χ² statistic</div>
+              <div class="fw-semibold">90.6</div>
+            </div>
+            <div class="col-auto">
+              <div class="text-muted small">P-value</div>
+              <div class="fw-semibold p-val">0.714640</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+
+      
+      <h3 class="sub-heading" id="rand-dist">Distribution Tests</h3>
+      <div class="row g-3 mb-3">
+        
+        <div class="col-md-6">
+          <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center py-2">
+              <span class="fw-semibold">Cramer-von Mises Uniformity Test</span>
+              
+  <span class="badge bg-success">
+    PASS
+  </span>
+
+            </div>
+            <div class="card-body py-2">
+              <div class="row g-2 mb-2">
+                <div class="col-auto">
+                  <div class="text-muted small">P-value</div>
+                  <div class="fw-semibold p-val">0.493218</div>
+                </div>
+                <div class="col-auto">
+                  <div class="text-muted small">Threshold</div>
+                  <div class="fw-semibold p-val">0.01</div>
+                </div>
+              </div>
+              
+              <details class="small text-muted">
+                <summary>Parameters</summary>
+                <table class="table table-sm param-table mt-1">
+                  <tbody>
+                    
+                    <tr><th>n_rolls</th><td>1000</td></tr>
+                    
+                    <tr><th>obs_min</th><td>0.11</td></tr>
+                    
+                    <tr><th>obs_max</th><td>99.87</td></tr>
+                    
+                    <tr><th>statistic</th><td>0.12056324052358076</td></tr>
+                    
+                    <tr><th>normalisation</th><td>(outcome - obs_min) / (obs_max - obs_min)</td></tr>
+                    
+                    <tr><th>reference_cdf</th><td>uniform(0, 1)</td></tr>
+                    
+                  </tbody>
+                </table>
+              </details>
+              
+            </div>
+          </div>
+        </div>
+        
+        <div class="col-md-6">
+          <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center py-2">
+              <span class="fw-semibold">Runs Independence Test</span>
+              
+  <span class="badge bg-success">
+    PASS
+  </span>
+
+            </div>
+            <div class="card-body py-2">
+              <div class="row g-2 mb-2">
+                <div class="col-auto">
+                  <div class="text-muted small">P-value</div>
+                  <div class="fw-semibold p-val">0.949546</div>
+                </div>
+                <div class="col-auto">
+                  <div class="text-muted small">Threshold</div>
+                  <div class="fw-semibold p-val">0.01</div>
+                </div>
+              </div>
+              
+              <details class="small text-muted">
+                <summary>Parameters</summary>
+                <table class="table table-sm param-table mt-1">
+                  <tbody>
+                    
+                    <tr><th>n_rolls</th><td>1000</td></tr>
+                    
+                    <tr><th>median</th><td>49.655</td></tr>
+                    
+                    <tr><th>n_above_median</th><td>500</td></tr>
+                    
+                    <tr><th>n_below_or_equal_median</th><td>500</td></tr>
+                    
+                    <tr><th>observed_runs</th><td>502</td></tr>
+                    
+                    <tr><th>expected_runs</th><td>501.0</td></tr>
+                    
+                    <tr><th>variance_runs</th><td>249.74974974974975</td></tr>
+                    
+                    <tr><th>z_statistic</th><td>0.06327723141882918</td></tr>
+                    
+                  </tbody>
+                </table>
+              </details>
+              
+            </div>
+          </div>
+        </div>
+        
+      </div>
+
+      <div class="card mb-4">
+        <div class="card-header py-2 fw-semibold">Roll Outcome Distribution</div>
+        <div class="card-body">
+          <div class="chart-container">
+            <canvas id="histogramChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      
+      
+      <h3 class="sub-heading" id="rand-entropy">Server Seed Min-Entropy</h3>
+      
+<div class="card mb-3">
+  <div class="card-header d-flex justify-content-between align-items-center py-2">
+    <span class="fw-semibold">Server Seed Min-Entropy (NIST SP 800-90B §3)</span>
+    
+  <span class="badge bg-danger">
+    FAIL
+  </span>
+
+  </div>
+  <div class="card-body py-2">
+    <p class="mb-1 text-muted small">Server seed min-entropy -0.0000 bits is below the threshold of 8.0 bits — entropy source may be degraded.</p>
+    
+    <table class="table table-sm param-table mb-0">
+      <tbody>
+        
+        <tr><th>n_seeds</th><td>1000</td></tr>
+        
+        <tr><th>n_unique_seeds</th><td>1</td></tr>
+        
+        <tr><th>max_observed_frequency</th><td>1000</td></tr>
+        
+        <tr><th>min_entropy_bits</th><td>-0.0</td></tr>
+        
+        <tr><th>threshold_bits</th><td>8.0</td></tr>
+        
+        <tr><th>sample_bound_bits</th><td>9.9658</td></tr>
+        
+      </tbody>
+    </table>
+    
+  </div>
+</div>
+
+      
+
+      
+      
+      <h3 class="sub-heading" id="rand-nist-light">NIST SP 800-22 — Light Tier (Tests 1-7)</h3>
+      <div class="card mb-3">
+        <div class="card-body p-0">
+          
+<table class="table table-sm table-hover">
+  <thead class="table-light">
+    <tr>
+      <th>Test</th>
+      <th class="text-end">P-value</th>
+      <th class="text-end">Threshold</th>
+      <th class="text-center">Result</th>
+    </tr>
+  </thead>
+  <tbody>
+    
+    <tr>
+      <td>Frequency (Monobit) Test</td>
+      <td class="text-end p-val">0.868142</td>
+      <td class="text-end p-val">0.01</td>
+      <td class="text-center">
+  <span class="badge bg-success">
+    PASS
+  </span>
+</td>
+    </tr>
+    
+    <tr>
+      <td>Frequency within a Block</td>
+      <td class="text-end p-val">0.545434</td>
+      <td class="text-end p-val">0.01</td>
+      <td class="text-center">
+  <span class="badge bg-success">
+    PASS
+  </span>
+</td>
+    </tr>
+    
+    <tr>
+      <td>Runs Test</td>
+      <td class="text-end p-val">0.506605</td>
+      <td class="text-end p-val">0.01</td>
+      <td class="text-center">
+  <span class="badge bg-success">
+    PASS
+  </span>
+</td>
+    </tr>
+    
+    <tr>
+      <td>Longest Run of Ones in a Block</td>
+      <td class="text-end p-val">0.487854</td>
+      <td class="text-end p-val">0.01</td>
+      <td class="text-center">
+  <span class="badge bg-success">
+    PASS
+  </span>
+</td>
+    </tr>
+    
+    <tr>
+      <td>Binary Matrix Rank Test</td>
+      <td class="text-end p-val">0.609238</td>
+      <td class="text-end p-val">0.01</td>
+      <td class="text-center">
+  <span class="badge bg-success">
+    PASS
+  </span>
+</td>
+    </tr>
+    
+    <tr>
+      <td>Discrete Fourier Transform (Spectral) Test</td>
+      <td class="text-end p-val">0.127634</td>
+      <td class="text-end p-val">0.01</td>
+      <td class="text-center">
+  <span class="badge bg-success">
+    PASS
+  </span>
+</td>
+    </tr>
+    
+    <tr>
+      <td>Cumulative Sums Test</td>
+      <td class="text-end p-val">0.937150</td>
+      <td class="text-end p-val">0.01</td>
+      <td class="text-center">
+  <span class="badge bg-success">
+    PASS
+  </span>
+</td>
+    </tr>
+    
+  </tbody>
+</table>
+
+        </div>
+      </div>
+      <div class="card mb-4">
+        <div class="card-header py-2 fw-semibold">P-value Distribution — NIST Light</div>
+        <div class="card-body">
+          <div class="chart-container">
+            <canvas id="nistLightChart"></canvas>
+          </div>
+        </div>
+      </div>
+      
+
+      
+      
+
+      
+      
+
+      
+
+      
+      
+      
+      
+      <h2 class="section-heading" id="security">Security Evaluation</h2>
+
+      <div class="mb-3">
+        <span class="badge bg-light text-dark border">Rolls evaluated: 1000</span>
+      </div>
+
+      
+      
+<div class="card mb-3">
+  <div class="card-header d-flex justify-content-between align-items-center py-2">
+    <span class="fw-semibold">Seed Reuse</span>
+    
+  <span class="badge bg-danger">
+    FAIL
+  </span>
+
+  </div>
+  <div class="card-body py-2">
+    <p class="mb-1 text-muted small">1 server seed(s) reused; 1 client seed(s) reused.</p>
+    
+    <table class="table table-sm param-table mb-0">
+      <tbody>
+        
+        <tr><th>n_records</th><td>1000</td></tr>
+        
+        <tr><th>n_reused_server_seeds</th><td>1</td></tr>
+        
+        <tr><th>n_reused_client_seeds</th><td>1</td></tr>
+        
+      </tbody>
+    </table>
+    
+  </div>
+</div>
+
+      
+<div class="card mb-3">
+  <div class="card-header d-flex justify-content-between align-items-center py-2">
+    <span class="fw-semibold">Nonce Presence</span>
+    
+  <span class="badge bg-success">
+    PASS
+  </span>
+
+  </div>
+  <div class="card-body py-2">
+    <p class="mb-1 text-muted small">All 1000 records have a non-zero nonce.</p>
+    
+    <table class="table table-sm param-table mb-0">
+      <tbody>
+        
+        <tr><th>n_records</th><td>1000</td></tr>
+        
+        <tr><th>n_missing</th><td>0</td></tr>
+        
+      </tbody>
+    </table>
+    
+  </div>
+</div>
+
+      
+<div class="card mb-3">
+  <div class="card-header d-flex justify-content-between align-items-center py-2">
+    <span class="fw-semibold">Nonce Uniqueness</span>
+    
+  <span class="badge bg-success">
+    PASS
+  </span>
+
+  </div>
+  <div class="card-body py-2">
+    <p class="mb-1 text-muted small">All 1000 nonce values are unique.</p>
+    
+    <table class="table table-sm param-table mb-0">
+      <tbody>
+        
+        <tr><th>n_records</th><td>1000</td></tr>
+        
+        <tr><th>n_duplicate_nonces</th><td>0</td></tr>
+        
+        <tr><th>n_duplicate_rolls</th><td>0</td></tr>
+        
+      </tbody>
+    </table>
+    
+  </div>
+</div>
+
+
+      <div class="card mb-4">
+        <div class="card-header py-2 fw-semibold">Nonce Min-Entropy</div>
+        <div class="card-body py-2">
+          <div class="fs-4 fw-bold">9.9658 <span class="fs-6 text-muted fw-normal">bits</span></div>
+        </div>
+      </div>
+      
+
+      
+
+      
+      
+      
+      
+      <h2 class="section-heading" id="transparency">Transparency Evaluation</h2>
+
+      <div class="mb-3">
+        <span class="badge bg-light text-dark border">Rolls evaluated: 1000</span>
+      </div>
+
+      
+      
+<div class="card mb-3">
+  <div class="card-header d-flex justify-content-between align-items-center py-2">
+    <span class="fw-semibold">Determinism (End-to-End Re-derivation)</span>
+    
+  <span class="badge bg-success">
+    PASS
+  </span>
+
+  </div>
+  <div class="card-body py-2">
+    <p class="mb-1 text-muted small">All 1000 records reproduced correctly — mechanism is deterministic.</p>
+    
+    <table class="table table-sm param-table mb-0">
+      <tbody>
+        
+        <tr><th>n_records</th><td>1000</td></tr>
+        
+        <tr><th>n_passed</th><td>1000</td></tr>
+        
+        <tr><th>n_mismatches</th><td>0</td></tr>
+        
+        <tr><th>mismatch_indices</th><td>[]</td></tr>
+        
+      </tbody>
+    </table>
+    
+  </div>
+</div>
+
+      
+<div class="card mb-3">
+  <div class="card-header d-flex justify-content-between align-items-center py-2">
+    <span class="fw-semibold">Outcome Mapping Reproducibility</span>
+    
+  <span class="badge bg-success">
+    PASS
+  </span>
+
+  </div>
+  <div class="card-body py-2">
+    <p class="mb-1 text-muted small">All 1000 records reproduced via the mapping function — outcome mapping is independently reproducible.</p>
+    
+    <table class="table table-sm param-table mb-0">
+      <tbody>
+        
+        <tr><th>n_records</th><td>1000</td></tr>
+        
+        <tr><th>n_passed</th><td>1000</td></tr>
+        
+        <tr><th>n_mismatches</th><td>0</td></tr>
+        
+        <tr><th>n_mapping_errors</th><td>0</td></tr>
+        
+        <tr><th>mismatch_indices</th><td>[]</td></tr>
+        
+      </tbody>
+    </table>
+    
+  </div>
+</div>
+
+      
+
+      
+
+      
+      
+      
+      
+      <h2 class="section-heading" id="nper">Non-Programmable Checks</h2>
+      <p class="text-muted small mb-3">Mechanism: <code>hmac-sha256</code></p>
+
+      <div class="accordion nper-accordion mb-4" id="nperAccordion">
+
+        
+        
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#nper-sha256">
+              Bare SHA-256 Check
+              <span class="ms-auto me-3">
+                
+  <span class="badge bg-success">
+    HMAC-SHA256
+  </span>
+
+              </span>
+            </button>
+          </h2>
+          <div id="nper-sha256" class="accordion-collapse collapse">
+            <div class="accordion-body">
+              <table class="table table-sm">
+                <tbody>
+                  <tr><th>HMAC-SHA256 used</th><td>
+  
+    <span class="badge bg-success">Yes</span>
+  
+</td></tr>
+                  <tr><th>Evidence</th><td class="small">Stake explicitly uses HMAC-SHA256 with the server_seed as the key and &#39;{client_seed}:{nonce}:{cursor}&#39; as the message. This is documented on their provably fair page. No bare SHA-256 concatenation is used at any stage of the outcome derivation.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        
+
+        
+        
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#nper-csprng">
+              CSPRNG Compliance
+              <span class="ms-auto me-3">
+                
+  <span class="badge bg-success">
+    PASS
+  </span>
+
+              </span>
+            </button>
+          </h2>
+          <div id="nper-csprng" class="accordion-collapse collapse">
+            <div class="accordion-body">
+              <table class="table table-sm">
+                <tbody>
+                  <tr><th>CSPRNG used</th><td>
+  
+    <span class="badge bg-success">Yes</span>
+  
+</td></tr>
+                  <tr><th>Generator name</th><td><code>os.urandom (OS-level CSPRNG)</code></td></tr>
+                  <tr><th>Approved construction</th><td>
+  
+    <span class="badge bg-success">Yes</span>
+  
+</td></tr>
+                  <tr><th>Evidence</th><td class="small">Server seeds are generated via os.urandom(32), which draws from the OS kernel&#39;s CSPRNG (/dev/urandom on Linux, CryptGenRandom on Windows). This is an approved construction per NIST SP 800-90A and is not susceptible to state reconstruction attacks.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        
+
+        
+        
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#nper-client-seed">
+              Client Seed Generation Source
+              <span class="ms-auto me-3">
+                
+  <span class="badge bg-danger">
+    Server-side
+  </span>
+
+              </span>
+            </button>
+          </h2>
+          <div id="nper-client-seed" class="accordion-collapse collapse">
+            <div class="accordion-body">
+              <table class="table table-sm">
+                <tbody>
+                  <tr><th>Generated client-side</th><td>
+  
+    <span class="badge bg-danger">No</span>
+  
+</td></tr>
+                  <tr><th>Evidence</th><td class="small">Stake generates a random default client seed server-side on the player&#39;s behalf. Players can replace it with any value they choose via the UI, but the default is not player-generated. This gives Stake the technical capability to know the default client seed before it is used.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        
+
+        
+        
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#nper-commitment">
+              Commitment Timing
+              <span class="ms-auto me-3">
+                
+                
+                  <span class="badge bg-danger">No External Evidence</span>
+                
+              </span>
+            </button>
+          </h2>
+          <div id="nper-commitment" class="accordion-collapse collapse">
+            <div class="accordion-body">
+              <table class="table table-sm">
+                <tbody>
+                  <tr><th>Evidence category</th><td><span class="enum-tag">0.0</span></td></tr>
+                  <tr><th>Description</th><td class="small">Stake publishes the SHA-256 hash of the server seed before play begins, but this commitment exists only on Stake&#39;s own servers. There is no on-chain timestamp, no third-party certificate, and no external record to independently confirm the hash was published before the player&#39;s client seed was received. Trust in the ordering of events is entirely based on Stake&#39;s word.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        
+
+        
+        
+
+        
+        
+        
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#nper-avc">
+              Attack Vector Classification
+            </button>
+          </h2>
+          <div id="nper-avc" class="accordion-collapse collapse">
+            <div class="accordion-body">
+              <table class="table table-sm attack-grid">
+                <thead class="table-light">
+                  <tr><th>Threat Actor</th><th class="text-center">Resisted</th><th>Reasoning</th></tr>
+                </thead>
+                <tbody>
+                  
+                  
+                  <tr>
+                    <td class="fw-semibold">Dishonest Operator</td>
+                    <td class="text-center">
+  <span class="badge bg-danger">
+    FAIL
+  </span>
+</td>
+                    <td class="small text-muted">The server seed commitment is self-reported by Stake with no external verification. A dishonest operator could in principle wait to see a player&#39;s client seed before selecting and committing a server seed. There is no independent mechanism to prove the commitment preceded the client seed submission.</td>
+                  </tr>
+                  
+                  
+                  
+                  <tr>
+                    <td class="fw-semibold">Malicious Player</td>
+                    <td class="text-center">
+  <span class="badge bg-success">
+    PASS
+  </span>
+</td>
+                    <td class="small text-muted">The server seed is unknown to the player at bet time — only its SHA-256 hash is shown. Without the pre-image, the player cannot compute outcomes for any client seed or nonce combination, regardless of what client seed they choose.</td>
+                  </tr>
+                  
+                  
+                  
+                  <tr>
+                    <td class="fw-semibold">External Eavesdropper</td>
+                    <td class="text-center">
+  <span class="badge bg-success">
+    PASS
+  </span>
+</td>
+                    <td class="small text-muted">HMAC-SHA256 is computationally secure. An eavesdropper observing the published outcome cannot derive the server seed key from the HMAC output.</td>
+                  </tr>
+                  
+                  
+                  
+                  <tr>
+                    <td class="fw-semibold">Compromised Oracle</td>
+                    <td class="text-center">
+  <span class="badge bg-success">
+    PASS
+  </span>
+</td>
+                    <td class="small text-muted">No external oracle is used. Stake generates all randomness internally via os.urandom. There is no oracle attack surface — though this shifts all trust to Stake&#39;s own infrastructure security.</td>
+                  </tr>
+                  
+                  
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        
+
+        
+        
+        
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#nper-vrf-qinp">
+              VRF qINP Uniqueness Enforcement
+              <span class="ms-auto me-3">
+                <span class="badge bg-secondary">N/A</span>
+              </span>
+            </button>
+          </h2>
+          <div id="nper-vrf-qinp" class="accordion-collapse collapse">
+            <div class="accordion-body">
+              
+              <p class="text-muted">Not applicable to this mechanism.</p>
+              
+            </div>
+          </div>
+        </div>
+        
+
+        
+        
+        
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#nper-drand-fr">
+              drand Future Round Commitment Strategy
+              <span class="ms-auto me-3">
+                <span class="badge bg-secondary">N/A</span>
+              </span>
+            </button>
+          </h2>
+          <div id="nper-drand-fr" class="accordion-collapse collapse">
+            <div class="accordion-body">
+              
+              <p class="text-muted">Not applicable to this mechanism.</p>
+              
+            </div>
+          </div>
+        </div>
+        
+
+        
+        
+        
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#nper-dkg">
+              DKG Phase Integrity
+              <span class="ms-auto me-3">
+                <span class="badge bg-secondary">N/A</span>
+              </span>
+            </button>
+          </h2>
+          <div id="nper-dkg" class="accordion-collapse collapse">
+            <div class="accordion-body">
+              
+              <p class="text-muted">Not applicable to this mechanism.</p>
+              
+            </div>
+          </div>
+        </div>
+        
+
+        
+        
+        
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#nper-pr">
+              Prediction Resistance
+              <span class="ms-auto me-3">
+                <span class="badge bg-success">Strong Entropy</span>
+              </span>
+            </button>
+          </h2>
+          <div id="nper-pr" class="accordion-collapse collapse">
+            <div class="accordion-body">
+              <table class="table table-sm">
+                <tbody>
+                  <tr><th>Reseeding frequency</th><td><span class="enum-tag">per_session</span></td></tr>
+                  <tr><th>Entropy source quality</th><td><span class="enum-tag">strong</span></td></tr>
+                  <tr><th>Entropy independent of PRNG state</th><td>
+  
+    <span class="badge bg-success">Yes</span>
+  
+</td></tr>
+                  <tr><th>Evidence</th><td class="small">A fresh server seed is drawn from os.urandom(32) at the start of each session. os.urandom pulls entropy from the OS kernel pool, which is independent of the HMAC derivation state. Knowing the current session&#39;s outcomes tells an attacker nothing about the next session&#39;s server seed.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        
+
+        
+        
+        
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#nper-bfsi">
+              Backwards / Forward State Inference
+              <span class="ms-auto me-3">
+  <span class="badge bg-danger">
+    Shared state
+  </span>
+</span>
+            </button>
+          </h2>
+          <div id="nper-bfsi" class="accordion-collapse collapse">
+            <div class="accordion-body">
+              <table class="table table-sm">
+                <tbody>
+                  <tr><th>Uses one-off seeds per round</th><td>
+  
+    <span class="badge bg-danger">No</span>
+  
+</td></tr>
+                  <tr><th>Shared state update formally documented</th><td>
+  
+    <span class="badge bg-success">Yes</span>
+  
+</td></tr>
+                  <tr><th>Shared state update provably one-way</th><td>
+  
+    <span class="badge bg-success">Yes</span>
+  
+</td></tr>
+                  <tr><th>Evidence</th><td class="small">All rolls within a session share the same HMAC key (server_seed). HMAC-SHA256 is formally specified in FIPS 198-1 as a provably one-way MAC construction. Knowing any roll&#39;s raw_output does not allow an attacker to recover the server_seed or compute other rolls. Once the server_seed is disclosed post-session, all that session&#39;s outcomes become computable — this is intentional and necessary for player verification.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        
+
+        
+        
+        
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#nper-nonce">
+              Nonce Management
+              <span class="ms-auto me-3">
+                
+  <span class="badge bg-success">
+    PASS
+  </span>
+
+              </span>
+            </button>
+          </h2>
+          <div id="nper-nonce" class="accordion-collapse collapse">
+            <div class="accordion-body">
+              <div class="row g-2 mb-3">
+                <div class="col-auto">
+  
+    <span class="badge bg-success">Yes</span>
+  
+ Initialises at zero</div>
+                <div class="col-auto">
+  
+    <span class="badge bg-success">Yes</span>
+  
+ Increments by one</div>
+                <div class="col-auto">
+  
+    <span class="badge bg-success">Yes</span>
+  
+ No reset without rotation</div>
+                <div class="col-auto">
+  
+    <span class="badge bg-danger">No</span>
+  
+ Overflow documented</div>
+              </div>
+              
+              <p class="small text-muted mb-0">Evidence: Stake&#39;s published algorithm starts the nonce at 0 and increments by 1 for every bet within a session. When a player requests a new server seed, the nonce resets to 0 alongside a fresh server_seed — this counts as seed rotation so the (server_seed, client_seed, nonce) triple remains unique. Stake does not document what happens if the nonce reaches the maximum integer value.</p>
+            </div>
+          </div>
+        </div>
+        
+
+        
+        
+        
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#nper-csrb">
+              Client Seed Rotation Behaviour
+              <span class="ms-auto me-3"><span class="enum-tag">present</span></span>
+            </button>
+          </h2>
+          <div id="nper-csrb" class="accordion-collapse collapse">
+            <div class="accordion-body">
+              <table class="table table-sm">
+                <tbody>
+                  <tr><th>Default seed source</th><td><span class="enum-tag">server_side</span></td></tr>
+                  <tr><th>Rotation guidance availability</th><td><span class="enum-tag">present</span></td></tr>
+                  <tr><th>Rotation recommendation</th><td><span class="enum-tag">per_session</span></td></tr>
+                  <tr><th>Evidence</th><td class="small">Stake generates a random default client seed on behalf of the player and displays it in the UI. Players can change it at any time. Stake&#39;s documentation recommends rotating both the server seed and client seed together when starting a new session, and the UI makes this straightforward.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        
+
+        
+        
+        
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#nper-vsa">
+              VRF Security Assessment
+              <span class="ms-auto me-3">
+                <span class="badge bg-secondary">N/A</span>
+              </span>
+            </button>
+          </h2>
+          <div id="nper-vsa" class="accordion-collapse collapse">
+            <div class="accordion-body">
+              
+              <p class="text-muted">Not applicable to this mechanism.</p>
+              
+            </div>
+          </div>
+        </div>
+        
+
+        
+        
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#nper-vts">
+              Verification &amp; Transparency Scores
+            </button>
+          </h2>
+          <div id="nper-vts" class="accordion-collapse collapse">
+            <div class="accordion-body">
+              <div class="chart-container-lg mb-3">
+                <canvas id="transparencyScoresChart"></canvas>
+              </div>
+              <table class="table table-sm">
+                <thead class="table-light"><tr><th>Dimension</th><th>Justification</th></tr></thead>
+                <tbody>
+                  
+                  <tr><th class="small">algorithmDisclosure</th><td class="small text-muted">Stake fully discloses the HMAC-SHA256 construction, message format (client_seed:nonce:cursor), bytes_to_number formula, and the floor(x * 10001) / 100 outcome mapping on their provably fair page. Everything needed to independently reproduce a result is published.</td></tr>
+                  
+                  <tr><th class="small">entropySourceDisclosure</th><td class="small text-muted">Stake states that server seeds are randomly generated but does not explicitly name the generator (e.g. os.urandom, /dev/urandom, or HMAC-DRBG). The CSPRNG type and seeding mechanism are not named in their public documentation.</td></tr>
+                  
+                  <tr><th class="small">historicalAuditabilityWindow</th><td class="small text-muted">Past outcomes and seed pairs are accessible via Stake&#39;s provably fair page after the server seed is revealed, but no explicit minimum retention period is stated. There is no permanent external log — if Stake deletes records, they are gone.</td></tr>
+                  
+                  <tr><th class="small">verificationToolAvailability</th><td class="small text-muted">Stake provides a built-in verification tool on their provably fair page where players enter the seed pair and nonce and get the outcome confirmed. Several unofficial third-party calculators exist but are not maintained by Stake and cannot be considered authoritative.</td></tr>
+                  
+                  <tr><th class="small">verificationFriction</th><td class="small text-muted">Stake&#39;s in-platform verification tool is accessible to anyone — enter your seeds and nonce, click verify. Experts can also independently replicate the HMAC computation using any standard library. Both paths are low friction.</td></tr>
+                  
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        
+
+      </div>
+      
+
+    </main>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+const SIG = 0.01;
+
+function passColours(values, sig) {
+  return values.map(v => v >= sig ? "rgba(25,135,84,0.75)" : "rgba(220,53,69,0.75)");
+}
+
+
+(function() {
+  const hist = {"expected": 10.0, "labels": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100], "observed": [17, 3, 12, 10, 10, 13, 9, 7, 12, 13, 15, 13, 10, 5, 9, 10, 13, 13, 5, 13, 5, 9, 8, 15, 7, 13, 12, 10, 16, 7, 10, 5, 9, 6, 11, 8, 7, 9, 8, 8, 11, 14, 12, 14, 14, 10, 8, 14, 11, 10, 12, 6, 8, 15, 10, 11, 9, 6, 12, 7, 11, 13, 15, 5, 12, 8, 8, 10, 6, 11, 6, 6, 6, 9, 6, 7, 8, 3, 15, 8, 10, 13, 10, 9, 19, 15, 8, 8, 10, 12, 12, 11, 12, 12, 7, 12, 15, 14, 9, 0]};
+  new Chart(document.getElementById("histogramChart"), {
+    type: "bar",
+    data: {
+      labels: hist.labels,
+      datasets: [
+        {
+          label: "Observed",
+          data: hist.observed,
+          backgroundColor: "rgba(13,110,253,0.7)",
+          borderColor: "rgba(13,110,253,1)",
+          borderWidth: 1,
+        },
+        {
+          label: "Expected",
+          data: hist.labels.map(() => hist.expected),
+          type: "line",
+          borderColor: "rgba(220,53,69,0.9)",
+          borderDash: [6,3],
+          borderWidth: 2,
+          pointRadius: 0,
+          fill: false,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { position: "top" } },
+      scales: {
+        x: { title: { display: true, text: "Outcome (face value)" } },
+        y: { title: { display: true, text: "Count" }, beginAtZero: true },
+      },
+    },
+  });
+})();
+
+
+
+(function() {
+  const tests = [{"name": "Frequency (Monobit) Test", "p_value": 0.8681415436253094, "passed": true}, {"name": "Frequency within a Block", "p_value": 0.5454341526680073, "passed": true}, {"name": "Runs Test", "p_value": 0.5066052833758575, "passed": true}, {"name": "Longest Run of Ones in a Block", "p_value": 0.4878539038929238, "passed": true}, {"name": "Binary Matrix Rank Test", "p_value": 0.6092379875130045, "passed": true}, {"name": "Discrete Fourier Transform (Spectral) Test", "p_value": 0.12763362939379236, "passed": true}, {"name": "Cumulative Sums Test", "p_value": 0.9371498925138319, "passed": true}];
+  const labels = tests.map(t => t.name);
+  const pvals  = tests.map(t => t.p_value);
+  new Chart(document.getElementById("nistLightChart"), {
+    type: "bar",
+    data: {
+      labels: labels,
+      datasets: [{
+        label: "P-value",
+        data: pvals,
+        backgroundColor: passColours(pvals, SIG),
+        borderWidth: 1,
+      }],
+    },
+    options: {
+      indexAxis: "y",
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        annotation: {
+          annotations: {
+            threshold: {
+              type: "line",
+              xMin: SIG, xMax: SIG,
+              borderColor: "rgba(220,53,69,0.9)",
+              borderWidth: 2,
+              borderDash: [6,3],
+              label: { content: "α=" + SIG, display: true, position: "end" },
+            },
+          },
+        },
+      },
+      scales: {
+        x: { min: 0, max: 1, title: { display: true, text: "P-value" } },
+      },
+    },
+  });
+})();
+
+
+
+
+
+(function() {
+  const td = {"justifications": {"algorithmDisclosure": "Stake fully discloses the HMAC-SHA256 construction, message format (client_seed:nonce:cursor), bytes_to_number formula, and the floor(x * 10001) / 100 outcome mapping on their provably fair page. Everything needed to independently reproduce a result is published.", "entropySourceDisclosure": "Stake states that server seeds are randomly generated but does not explicitly name the generator (e.g. os.urandom, /dev/urandom, or HMAC-DRBG). The CSPRNG type and seeding mechanism are not named in their public documentation.", "historicalAuditabilityWindow": "Past outcomes and seed pairs are accessible via Stake\u0027s provably fair page after the server seed is revealed, but no explicit minimum retention period is stated. There is no permanent external log \u2014 if Stake deletes records, they are gone.", "verificationFriction": "Stake\u0027s in-platform verification tool is accessible to anyone \u2014 enter your seeds and nonce, click verify. Experts can also independently replicate the HMAC computation using any standard library. Both paths are low friction.", "verificationToolAvailability": "Stake provides a built-in verification tool on their provably fair page where players enter the seed pair and nonce and get the outcome confirmed. Several unofficial third-party calculators exist but are not maintained by Stake and cannot be considered authoritative."}, "labels": ["Algorithm Disclosure", "Entropy Source Disclosure", "Historical Auditability", "Verification Tool (In-Platform)", "Verification Tool (Third-Party)", "Verification Friction (Expert)", "Verification Friction (Non-Expert)"], "scores": [1.0, 0.5, 0.5, 1.0, 0.5, 1.0, 1.0]};
+  new Chart(document.getElementById("transparencyScoresChart"), {
+    type: "bar",
+    data: {
+      labels: td.labels,
+      datasets: [{
+        label: "Score",
+        data: td.scores,
+        backgroundColor: td.scores.map(s =>
+          s >= 1.0 ? "rgba(25,135,84,0.75)" :
+          s >= 0.5 ? "rgba(255,193,7,0.75)" :
+                     "rgba(220,53,69,0.75)"
+        ),
+        borderWidth: 1,
+      }],
+    },
+    options: {
+      indexAxis: "y",
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { min: 0, max: 1, title: { display: true, text: "Score (0–1)" } },
+      },
+    },
+  });
+})();
+
+
+</script>
+</body>
+</html>
