@@ -25,26 +25,25 @@ def main() -> None:
         "--c",
         type=int,
         default=1000,
-        help="Number of rolls to generate (default: 1000)"
+        help="The number of rolls to generate (default: 1000)"
     )
     parser.add_argument(
         "--d",
         type=str,
         required=True,
-        help="Path to save generated rolls CSV"
+        help="The filepath to save the generated rolls CSV"
     )
     parser.add_argument(
         "--r",
         type=str,
         required=True,
-        help="Path to save evaluation results JSON"
+        help="The filepath to save the programmable evaluation results (per) JSON"
     )
     parser.add_argument(
         "--np",
         type=str,
         required=True,
-        default=None,
-        help="Path to non-programmable evaluation results JSON"
+        help="The filepath to the non-programmable evaluation results (nper) JSON"
     )
     args = parser.parse_args()
 
@@ -69,10 +68,9 @@ def main() -> None:
     with open(args.np, "r", encoding="utf-8") as f:
         non_programmable = json.load(f)
 
-    output_path = os.path.join(
-        REPORTS_DIRECTORY,
-        f"{result.mechanism_id}_eval_report.html"
-    )
+    filename = os.path.splitext(args.r)[0] + ".html"
+
+    output_path = os.path.join(REPORTS_DIRECTORY, filename)
 
     report_engine = ReportEngine(output_path=output_path, n_faces=MAX_VALUE)
     report_path = report_engine.generate(

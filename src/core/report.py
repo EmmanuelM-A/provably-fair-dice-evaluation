@@ -1,15 +1,6 @@
 """
-Standalone report generator.
-
-Usage:
-    python -m src.core.report --r RESULTS_PATH --np NPER_PATH --d DATA_PATH [--o REPORT_PATH] [--t TIER]
-
-Args:
-    --r   : Path to the evaluation results JSON produced by src.core.evaluate (required)
-    --np  : Path to the non-programmable evaluation results JSON (optional)
-    --d   : Path to the rolls CSV, used to build the outcome histogram (required)
-    --o   : Output path for the HTML report (optional; defaults to --r with .html extension)
-    --t   : Evaluation tier that was used — LIGHT | IN_DEPTH | FULL_DEPTH (default: LIGHT)
+The standalone script to produce the HTML report for the combined
+evaluation results.
 """
 
 import argparse
@@ -17,7 +8,7 @@ import json
 import os
 from typing import List, Optional
 
-from src.config.configs import MAX_VALUE
+from src.config.configs import MAX_VALUE, REPORTS_DIRECTORY
 from src.enigines.evaluation import EvaluationResult
 from src.enigines.report import ReportEngine
 from src.modules.data import BinaryResult, TestResult
@@ -146,6 +137,8 @@ def _load_evaluation_result(path: str) -> EvaluationResult:
         d = json.load(f)
     return EvaluationResult(
         mechanism=d["mechanism"],
+        mechanism_id=d["mechanism_id"],
+        tier=d["tier"],
         saved_at=d["saved_at"],
         randomness=_randomness_result(d["randomness"]) if d.get("randomness") else None,
         security=_security_result(d["security"]) if d.get("security") else None,
@@ -165,34 +158,35 @@ def main() -> None:
         "--r",
         type=str,
         required=True,
-        help="Path to evaluation results JSON"
+        help="The filepath to the programmable evaluation results (per) JSON"
     )
     parser.add_argument(
         "--np",
         type=str,
-        required=False,
-        default=None,
-        help="Path to non-programmable evaluation results JSON"
+        required=True,
+        help="The filepath to the non-programmable evaluation results (nper) JSON"
     )
     parser.add_argument(
         "--d",
         type=str,
         required=True,
-        help="Path to rolls CSV (for histogram data)"
+        help="The filepath to the generated rolls CSV"
     )
     args = parser.parse_args()
-
-    output_path = os.path.splitext(args.r)[0] + ".html"
 
     programmable = _load_evaluation_result(args.r)
     non_programmable = _load_nper(args.np)
     rolls: List[RollRecord] = load_roll_records_from(args.d)
+    
+    filename = os.path.splitext(args.r)[0] + ".html"
+
+    output_path = os.path.join(REPORTS_DIRECTORY, filename)
 
     engine = ReportEngine(output_path=output_path, n_faces=MAX_VALUE)
     report_path = engine.generate(
         programmable=programmable,
         rolls=rolls,
-        tier=args.t,
+        tier=programmable.tier,
         non_programmable=non_programmable,
     )
     print(f"Report generated: {report_path}")
@@ -200,6 +194,11 @@ def main() -> None:
 
 if __name__ == "__main__":
     """
+    Args:
+        --d  : The filepath to the generated rolls CSV - REQUIRED
+        --r  : The filepath to the programmable evaluation results (per) JSON - REQUIRED
+        --np : The filepath to the non-programmable evaluation results (nper) JSON - REQUIRED
+
     Usage: python -m src.core.report --r path/to/eval_results.json --d path/to/saved_rolls.csv --np path/to/nper.json
     """
     main()

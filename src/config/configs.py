@@ -13,6 +13,11 @@ LOG_DIRECTORY: str = f"{PROJECT_ROOT}/logs"
 LOG_FORMAT: str = "%(asctime)s [%(levelname)s] [%(name)s]: %(message)s"
 DATE_FORMAT: str = "%Y-%m-%d %H:%M:%S"
 
+REPORTS_DIRECTORY: str = f"{PROJECT_ROOT}/results/reports"
+PER_DIRECTORY: str = f"{PROJECT_ROOT}/results/programmable"
+NPER_DIRECTORY: str = f"{PROJECT_ROOT}/results/non_programmable"
+ROLLS_DIRECTORY: str = f"{PROJECT_ROOT}/results/rolls"
+
 MAX_UINT32: int = 2**32
 MAX_VALUE: int = 100
 REJECTION_THRESHOLD: int = (MAX_UINT32 // MAX_VALUE) * MAX_VALUE
