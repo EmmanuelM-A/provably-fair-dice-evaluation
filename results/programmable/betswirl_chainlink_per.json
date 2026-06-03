@@ -1,0 +1,215 @@
+{
+    "mechanism": "BetSwirl Chainlink VRF v2.5 Mechanism",
+    "tier": "IN_DEPTH",
+    "saved_at": "2026-06-03 16:04:02",
+    "halted_at": "LIGHT",
+    "randomness": {
+        "n_rolls": 1000,
+        "n_bits": 256000,
+        "light": {
+            "sanity_check": {
+                "passed": true,
+                "chi_square_stat": 105.79999999999998,
+                "p_value": 0.3016190897692579,
+                "message": "Sanity check passed: outcomes appear uniform (chi2=105.80, p=3.0162e-01)."
+            },
+            "cramer_von_mises": {
+                "test_name": "Cramer-von Mises Uniformity Test",
+                "p_value": 0.25079586659319675,
+                "passed": true,
+                "parameters_used": {
+                    "n_rolls": 1000,
+                    "obs_min": 1.0,
+                    "obs_max": 100.0,
+                    "statistic": 0.20895367819610247,
+                    "normalisation": "(outcome - obs_min) / (obs_max - obs_min)",
+                    "reference_cdf": "uniform(0, 1)"
+                }
+            },
+            "runs_independence": {
+                "test_name": "Runs Independence Test",
+                "p_value": 0.7469598464721336,
+                "passed": true,
+                "parameters_used": {
+                    "n_rolls": 1000,
+                    "median": 52.0,
+                    "n_above_median": 493,
+                    "n_below_or_equal_median": 507,
+                    "observed_runs": 506,
+                    "expected_runs": 500.902,
+                    "variance_runs": 249.65175936336337,
+                    "z_statistic": 0.32265062866267186
+                }
+            },
+            "server_seed_min_entropy": {
+                "test_name": "server_seed_min_entropy",
+                "passed": false,
+                "message": "Server seed min-entropy 1.7370 bits is below the threshold of 8.0 bits \u2014 entropy source may be degraded.",
+                "details": {
+                    "n_seeds": 1000,
+                    "n_unique_seeds": 4,
+                    "max_observed_frequency": 300,
+                    "min_entropy_bits": 1.737,
+                    "threshold_bits": 8.0,
+                    "sample_bound_bits": 9.9658
+                }
+            },
+            "nist_light": {
+                "frequency_monobit": {
+                    "test_name": "Frequency (Monobit) Test",
+                    "p_value": 0.2388171666503048,
+                    "passed": true,
+                    "parameters_used": {
+                        "n": 256000,
+                        "s_obs": 1.1779484284127213
+                    }
+                },
+                "frequency_block": {
+                    "test_name": "Frequency within a Block",
+                    "p_value": 0.04613441710002941,
+                    "passed": true,
+                    "parameters_used": {
+                        "n": 256000,
+                        "M": 128,
+                        "N": 2000,
+                        "chi_sq": 2107.6875
+                    }
+                },
+                "runs": {
+                    "test_name": "Runs Test",
+                    "p_value": 0.4629346603368103,
+                    "passed": true,
+                    "parameters_used": {
+                        "n": 256000,
+                        "pi": 0.5011640625,
+                        "v_obs": 128185
+                    }
+                },
+                "longest_run_ones": {
+                    "test_name": "Longest Run of Ones in a Block",
+                    "p_value": 0.561039010156652,
+                    "passed": true,
+                    "parameters_used": {
+                        "n": 256000,
+                        "M": 8,
+                        "N": 32000,
+                        "chi_sq": 2.055151767069458
+                    }
+                },
+                "binary_matrix_rank": {
+                    "test_name": "Binary Matrix Rank Test",
+                    "p_value": 0.962248455796666,
+                    "passed": true,
+                    "parameters_used": {
+                        "n": 256000,
+                        "M": 32,
+                        "Q": 32,
+                        "num_matrices": 250,
+                        "chi_sq": 0.07696518320699298
+                    }
+                },
+                "dft_spectral": {
+                    "test_name": "Discrete Fourier Transform (Spectral) Test",
+                    "p_value": 0.8560779006663954,
+                    "passed": true,
+                    "parameters_used": {
+                        "n": 256000,
+                        "threshold": 875.7325288831059,
+                        "n_below_threshold": 121610,
+                        "expected_below_threshold": 121600.0
+                    }
+                },
+                "cumulative_sums": {
+                    "test_name": "Cumulative Sums Test",
+                    "p_value": 0.3464618665958987,
+                    "passed": true,
+                    "parameters_used": {
+                        "n": 256000,
+                        "p_value_forward": 0.3464618665958987,
+                        "p_value_backward": 0.38667720357933
+                    }
+                }
+            }
+        },
+        "in_depth": null,
+        "full_depth": null
+    },
+    "security": {
+        "n_rolls": 1000,
+        "light": {
+            "seed_reuse": {
+                "test_name": "seed_reuse",
+                "passed": false,
+                "message": "4 server seed(s) reused; 1 client seed(s) reused.",
+                "details": {
+                    "n_records": 1000,
+                    "n_reused_server_seeds": 4,
+                    "n_reused_client_seeds": 1
+                }
+            },
+            "nonce_presence": {
+                "test_name": "nonce_presence",
+                "passed": false,
+                "message": "4 record(s) have a zero or missing nonce.",
+                "details": {
+                    "n_records": 1000,
+                    "n_missing": 4
+                }
+            },
+            "nonce_uniqueness": {
+                "test_name": "nonce_uniqueness",
+                "passed": false,
+                "message": "300 nonce value(s) reused (700 duplicate roll(s)).",
+                "details": {
+                    "n_records": 1000,
+                    "n_duplicate_nonces": 300,
+                    "n_duplicate_rolls": 700
+                }
+            },
+            "nonce_min_entropy": 7.965784284662087,
+            "summary": {
+                "seed_reuse": false,
+                "nonce_presence": false,
+                "nonce_uniqueness": false,
+                "nonce_min_entropy_bits": 7.9658
+            }
+        },
+        "in_depth": null,
+        "full_depth": null
+    },
+    "performance": null,
+    "transparency": {
+        "n_rolls": 1000,
+        "light": {
+            "determinism": {
+                "test_name": "determinism",
+                "passed": true,
+                "message": "All 1000 records reproduced correctly \u2014 mechanism is deterministic.",
+                "details": {
+                    "n_records": 1000,
+                    "n_passed": 1000,
+                    "n_mismatches": 0,
+                    "mismatch_indices": []
+                }
+            },
+            "mapping_reproducibility": {
+                "test_name": "outcome_mapping_reproducibility",
+                "passed": true,
+                "message": "All 1000 records reproduced via the mapping function \u2014 outcome mapping is independently reproducible.",
+                "details": {
+                    "n_records": 1000,
+                    "n_passed": 1000,
+                    "n_mismatches": 0,
+                    "n_mapping_errors": 0,
+                    "mismatch_indices": []
+                }
+            },
+            "summary": {
+                "determinism": true,
+                "mapping_reproducibility": true
+            }
+        },
+        "in_depth": null,
+        "full_depth": null
+    }
+}
