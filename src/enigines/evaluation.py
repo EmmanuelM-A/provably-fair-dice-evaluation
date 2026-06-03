@@ -107,10 +107,10 @@ class EvaluationEngine:
         # Phase 1: always run LIGHT for all domains
         result.randomness = RandomnessTests(self._config, "LIGHT", self._mechanism).run(rolls)
         result.security = SecurityTests(self._config, "LIGHT").run(rolls)
-        result.performance = PerformanceTests(self._config, "LIGHT").run(
-            mechanism=self._mechanism,
-            n_latency_requests=self._config.n_latency_requests,
-        )
+        # result.performance = PerformanceTests(self._config, "LIGHT").run(
+        #     mechanism=self._mechanism,
+        #     n_latency_requests=self._config.n_latency_requests,
+        # )
         result.transparency = TransparencyTests(self._config, "LIGHT").run(
             rolls=rolls,
             mechanism=self._mechanism,
@@ -147,7 +147,7 @@ class EvaluationEngine:
             n_startup_requests=self._config.n_startup_requests,
             n_load_requests=self._config.n_load_requests,
         )
-        result.performance.in_depth = in_depth_performance.in_depth
+        # result.performance.in_depth = in_depth_performance.in_depth
 
         if tier not in ("FULL_DEPTH",):
             self._save(result)

@@ -35,8 +35,8 @@ def get_mechanism_mapping_fn():
     """
     Utility function to centralize switching mechanism outcome functions.
     """
-    return stake_dice_outcome;
-    # return betswirl_dice_outcome;
+    # return stake_dice_outcome;
+    return betswirl_dice_outcome;
     # return blockrand_dice_outcome;
 
 
@@ -44,8 +44,8 @@ def get_mechanism(data_file_path: str) -> ProvablyFairDiceMechanism:
     """
     Utility function to centralize switching mechanism instances.
     """
-    return StakesHMACMechanism(output_file=data_file_path)
-    # return BetSwirlChainlinkMechanism(output_file=data_file_path)
+    # return StakesHMACMechanism(output_file=data_file_path)
+    return BetSwirlChainlinkMechanism(output_file=data_file_path)
     # return BlockRandDrandMechanism(output_file=data_file_path)
 
 
