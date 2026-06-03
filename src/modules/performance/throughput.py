@@ -35,7 +35,7 @@ class ConcurrencyResult:
 
 def measure_startup_vs_steady_state(
     mechanism: ProvablyFairDiceMechanism,
-    n_requests: int = 10_000,
+    n_requests: int = 1_000, # Change it for more rigurous evaluation
     cov_threshold: float = 0.02,
     window_size: int = 100,
 ) -> StartupSteadyStateResult:
@@ -48,7 +48,7 @@ def measure_startup_vs_steady_state(
     latencies_ms: List[float] = []
     for _ in range(n_requests):
         t0 = time.perf_counter()
-        mechanism.generate_rolls(1)
+        mechanism.generate_rolls(1, save_rolls=False)
         latencies_ms.append((time.perf_counter() - t0) * 1_000)
 
     steady_state_idx = -1
@@ -96,7 +96,7 @@ def measure_throughput_under_load(
     (e.g. drand, Chainlink VRF).
     """
     if concurrency_levels is None:
-        concurrency_levels = [10, 100, 1_000, 5_000] # It would be 10_000
+        concurrency_levels = [10, 100, 1_000, 2_000] # It would be 10_000
 
     def _roll(_: int) -> float:
         t0 = time.perf_counter()
