@@ -1,7 +1,7 @@
 {
     "mechanism": "HMAC-SHA256 Mechanism",
-    "tier": "LIGHT",
-    "saved_at": "2026-06-02 22:47:30",
+    "tier": "IN_DEPTH",
+    "saved_at": "2026-06-03 16:07:46",
     "halted_at": null,
     "randomness": {
         "n_rolls": 1000,
@@ -9,47 +9,47 @@
         "light": {
             "sanity_check": {
                 "passed": true,
-                "chi_square_stat": 90.6,
-                "p_value": 0.7146395131747572,
-                "message": "Sanity check passed: outcomes appear uniform (chi2=90.60, p=7.1464e-01)."
+                "chi_square_stat": 66.19999999999999,
+                "p_value": 0.99540250508372,
+                "message": "Sanity check passed: outcomes appear uniform (chi2=66.20, p=9.9540e-01)."
             },
             "cramer_von_mises": {
                 "test_name": "Cramer-von Mises Uniformity Test",
-                "p_value": 0.493217734995243,
+                "p_value": 0.6097078940424252,
                 "passed": true,
                 "parameters_used": {
                     "n_rolls": 1000,
-                    "obs_min": 0.11,
-                    "obs_max": 99.87,
-                    "statistic": 0.12056324052358076,
+                    "obs_min": 0.03,
+                    "obs_max": 99.96,
+                    "statistic": 0.09506518368521981,
                     "normalisation": "(outcome - obs_min) / (obs_max - obs_min)",
                     "reference_cdf": "uniform(0, 1)"
                 }
             },
             "runs_independence": {
                 "test_name": "Runs Independence Test",
-                "p_value": 0.9495457461179486,
+                "p_value": 0.8001840417178969,
                 "passed": true,
                 "parameters_used": {
                     "n_rolls": 1000,
-                    "median": 49.655,
+                    "median": 50.375,
                     "n_above_median": 500,
                     "n_below_or_equal_median": 500,
-                    "observed_runs": 502,
+                    "observed_runs": 505,
                     "expected_runs": 501.0,
                     "variance_runs": 249.74974974974975,
-                    "z_statistic": 0.06327723141882918
+                    "z_statistic": 0.25310892567531673
                 }
             },
             "server_seed_min_entropy": {
                 "test_name": "server_seed_min_entropy",
                 "passed": false,
-                "message": "Server seed min-entropy -0.0000 bits is below the threshold of 8.0 bits \u2014 entropy source may be degraded.",
+                "message": "Server seed min-entropy 3.8365 bits is below the threshold of 8.0 bits \u2014 entropy source may be degraded.",
                 "details": {
                     "n_seeds": 1000,
-                    "n_unique_seeds": 1,
-                    "max_observed_frequency": 1000,
-                    "min_entropy_bits": -0.0,
+                    "n_unique_seeds": 15,
+                    "max_observed_frequency": 70,
+                    "min_entropy_bits": 3.8365,
                     "threshold_bits": 8.0,
                     "sample_bound_bits": 9.9658
                 }
@@ -57,81 +57,104 @@
             "nist_light": {
                 "frequency_monobit": {
                     "test_name": "Frequency (Monobit) Test",
-                    "p_value": 0.8681415436253094,
+                    "p_value": 0.8526142992573196,
                     "passed": true,
                     "parameters_used": {
                         "n": 256000,
-                        "s_obs": 0.16601957715883991
+                        "s_obs": 0.1857838125348923
                     }
                 },
                 "frequency_block": {
                     "test_name": "Frequency within a Block",
-                    "p_value": 0.5454341526680073,
+                    "p_value": 0.09261271245077461,
                     "passed": true,
                     "parameters_used": {
                         "n": 256000,
                         "M": 128,
                         "N": 2000,
-                        "chi_sq": 1992.125
+                        "chi_sq": 2084.28125
                     }
                 },
                 "runs": {
                     "test_name": "Runs Test",
-                    "p_value": 0.5066052833758575,
+                    "p_value": 0.3674920716205775,
                     "passed": true,
                     "parameters_used": {
                         "n": 256000,
-                        "pi": 0.5001640625,
-                        "v_obs": 128168
+                        "pi": 0.50018359375,
+                        "v_obs": 127772
                     }
                 },
                 "longest_run_ones": {
                     "test_name": "Longest Run of Ones in a Block",
-                    "p_value": 0.4878539038929238,
+                    "p_value": 0.5448008513476781,
                     "passed": true,
                     "parameters_used": {
                         "n": 256000,
                         "M": 8,
                         "N": 32000,
-                        "chi_sq": 2.4311960703672706
+                        "chi_sq": 2.1353177504396204
                     }
                 },
                 "binary_matrix_rank": {
                     "test_name": "Binary Matrix Rank Test",
-                    "p_value": 0.6092379875130045,
+                    "p_value": 0.17174226029277276,
                     "passed": true,
                     "parameters_used": {
                         "n": 256000,
                         "M": 32,
                         "Q": 32,
                         "num_matrices": 250,
-                        "chi_sq": 0.9910926070297076
+                        "chi_sq": 3.5235208253852406
                     }
                 },
                 "dft_spectral": {
                     "test_name": "Discrete Fourier Transform (Spectral) Test",
-                    "p_value": 0.12763362939379236,
+                    "p_value": 0.15191054369171025,
                     "passed": true,
                     "parameters_used": {
                         "n": 256000,
                         "threshold": 875.7325288831059,
-                        "n_below_threshold": 121684,
+                        "n_below_threshold": 121521,
                         "expected_below_threshold": 121600.0
                     }
                 },
                 "cumulative_sums": {
                     "test_name": "Cumulative Sums Test",
-                    "p_value": 0.9371498925138319,
+                    "p_value": 0.5484297957439468,
                     "passed": true,
                     "parameters_used": {
                         "n": 256000,
-                        "p_value_forward": 0.9371498925138319,
-                        "p_value_backward": 0.9523979893683151
+                        "p_value_forward": 0.5484297957439468,
+                        "p_value_backward": 0.7174978856927718
                     }
                 }
             }
         },
-        "in_depth": null,
+        "in_depth": {
+            "entropy_monitoring": {
+                "repetition_count": {
+                    "alarms_triggered": 0,
+                    "alarm_positions": [],
+                    "passed": true,
+                    "parameters_used": {
+                        "n_samples": 1000,
+                        "threshold_c": 20
+                    }
+                },
+                "adaptive_proportion": {
+                    "alarms_triggered": 0,
+                    "alarm_positions": [],
+                    "passed": true,
+                    "parameters_used": {
+                        "n_samples": 1000,
+                        "window_w": 512,
+                        "threshold": 120
+                    }
+                }
+            },
+            "nist_in_depth": null
+        },
         "full_depth": null
     },
     "security": {
@@ -140,11 +163,11 @@
             "seed_reuse": {
                 "test_name": "seed_reuse",
                 "passed": false,
-                "message": "1 server seed(s) reused; 1 client seed(s) reused.",
+                "message": "15 server seed(s) reused; 4 client seed(s) reused.",
                 "details": {
                     "n_records": 1000,
-                    "n_reused_server_seeds": 1,
-                    "n_reused_client_seeds": 1
+                    "n_reused_server_seeds": 15,
+                    "n_reused_client_seeds": 4
                 }
             },
             "nonce_presence": {
@@ -158,47 +181,26 @@
             },
             "nonce_uniqueness": {
                 "test_name": "nonce_uniqueness",
-                "passed": true,
-                "message": "All 1000 nonce values are unique.",
+                "passed": false,
+                "message": "70 nonce value(s) reused (930 duplicate roll(s)).",
                 "details": {
                     "n_records": 1000,
-                    "n_duplicate_nonces": 0,
-                    "n_duplicate_rolls": 0
+                    "n_duplicate_nonces": 70,
+                    "n_duplicate_rolls": 930
                 }
             },
-            "nonce_min_entropy": 9.965784284662087,
+            "nonce_min_entropy": 6.058893689053568,
             "summary": {
                 "seed_reuse": false,
                 "nonce_presence": true,
-                "nonce_uniqueness": true,
-                "nonce_min_entropy_bits": 9.9658
+                "nonce_uniqueness": false,
+                "nonce_min_entropy_bits": 6.0589
             }
         },
         "in_depth": null,
         "full_depth": null
     },
-    "performance": {
-        "light": {
-            "latency": {
-                "test_name": "dice_generation_latency",
-                "n_requests": 1000,
-                "mean_ms": 0.2894966995809227,
-                "median_ms": 0.27050008065998554,
-                "p75_ms": 0.2877499791793525,
-                "p90_ms": 0.329809938557446,
-                "p99_ms": 0.5747630679979919,
-                "min_ms": 0.246299896389246,
-                "max_ms": 2.129599917680025,
-                "std_ms": 0.0916183954373962
-            },
-            "summary": {
-                "mean_latency_ms": 0.2895,
-                "p99_latency_ms": 0.5748
-            }
-        },
-        "in_depth": null,
-        "full_depth": null
-    },
+    "performance": null,
     "transparency": {
         "n_rolls": 1000,
         "light": {
