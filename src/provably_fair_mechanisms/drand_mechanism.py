@@ -133,6 +133,10 @@ class BlockRandDrandMechanism(ProvablyFairDiceMechanism):
     def generate_rolls(
         self, quantity: int, save_rolls: bool = True
     ) -> List[RollRecord]:
+        _SERVER_SEED_ROTATION = 70
+        _CLIENT_SEED_ROTATIONS = 3
+        client_rotation_every = quantity // (_CLIENT_SEED_ROTATIONS + 1)
+
         # 1. Generate a fresh server_secret and publish its pre-game commitment.
         server_secret = os.urandom(32).hex()
         player_secret = self._player_secret
@@ -154,6 +158,19 @@ class BlockRandDrandMechanism(ProvablyFairDiceMechanism):
         records = []
 
         for i in range(quantity):
+            # Rotate player_secret (client seed) — nonce continues unaffected.
+            if client_rotation_every > 0 and i > 0 and i % client_rotation_every == 0:
+                player_secret = os.urandom(16).hex()
+                self._logger.info(f"Roll {i + 1}: player secret rotated -> {player_secret[:8]}...")
+
+            # Rotate server_secret — nonce (drand round) is external, never resets.
+            if i > 0 and i % _SERVER_SEED_ROTATION == 0:
+                server_secret = os.urandom(32).hex()
+                commitment = self._commit(server_secret)
+                self._logger.info(
+                    f"Roll {i + 1}: server secret rotated, commitment: {commitment[:16]}..."
+                )
+
             target_round = start_round + i
 
             self._logger.debug(

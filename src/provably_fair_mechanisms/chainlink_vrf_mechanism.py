@@ -199,37 +199,52 @@ class BetSwirlChainlinkMechanism(ProvablyFairDiceMechanism):
             "Check your subscription balance at vrf.chain.link."
         )
 
-    def generate_rolls(self, quantity: int, save_rolls: bool = True) -> List[RollRecord]:
-        # 1. One VRF request to obtain the session server_seed.
-        self._logger.info("Submitting VRF request for session server seed...")
+    def _fetch_new_session_seed(self) -> tuple:
+        """Submits a fresh VRF request and returns (server_seed_bytes, server_seed_hex)."""
+        self._logger.info("Submitting VRF request for new session server seed...")
         request_id = self._submit_request()
         vrf_word = self._wait_for_fulfilment(request_id)
         server_seed_bytes = vrf_word.to_bytes(32, "big")
         server_seed = server_seed_bytes.hex()
+        self._logger.info(f"Session server_seed={server_seed[:16]}... (VRF requestId={request_id})")
+        return server_seed_bytes, server_seed
+
+    def generate_rolls(self, quantity: int, save_rolls: bool = True) -> List[RollRecord]:
+        _SERVER_SEED_ROTATION = 300
+        # client_seed is the consumer contract address — it does not rotate.
         client_seed = self._consumer_address
-        timestamp = datetime.now(timezone.utc)
 
-        self._logger.info(f"Session server_seed={server_seed} (VRF requestId={request_id})")
+        # 1. First VRF request for the opening session.
+        server_seed_bytes, server_seed = self._fetch_new_session_seed()
 
-        # 2. Derive all rolls via HMAC-SHA256 — no further on-chain calls.
+        # 2. Derive all rolls via HMAC-SHA256, rotating the VRF seed every session.
         rolls: List[RollRecord] = []
         records = []
+        session_nonce = -1
 
-        for nonce in range(quantity):
+        for i in range(quantity):
+            if i > 0 and i % _SERVER_SEED_ROTATION == 0:
+                server_seed_bytes, server_seed = self._fetch_new_session_seed()
+                session_nonce = -1
+                self._logger.info(f"Roll {i + 1}: new VRF session started")
+
+            session_nonce += 1
+            timestamp = datetime.now(timezone.utc)
+
             raw_output = _hmac.new(
                 key=server_seed_bytes,
-                msg=f"{client_seed}{nonce}".encode(),
+                msg=f"{client_seed}{session_nonce}".encode(),
                 digestmod=hashlib.sha256,
             ).digest()
             outcome = betswirl_dice_outcome(raw_output)
 
-            self._logger.info(f"Nonce {nonce} -> outcome={outcome:.0f}")
+            self._logger.info(f"Nonce {session_nonce} -> outcome={outcome:.0f}")
 
             records.append(
                 {
                     "server_seed": server_seed,
                     "client_seed": client_seed,
-                    "nonce": nonce,
+                    "nonce": session_nonce,
                     "raw_output": raw_output.hex(),
                     "outcome": outcome,
                     "timestamp": timestamp.isoformat(),
@@ -240,7 +255,7 @@ class BetSwirlChainlinkMechanism(ProvablyFairDiceMechanism):
                 RollRecord(
                     server_seed=server_seed,
                     client_seed=client_seed,
-                    nonce=nonce,
+                    nonce=session_nonce,
                     raw_output=raw_output,
                     outcome=outcome,
                     timestamp=timestamp,

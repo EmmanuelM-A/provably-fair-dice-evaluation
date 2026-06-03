@@ -104,24 +104,42 @@ class StakesHMACMechanism(ProvablyFairDiceMechanism):
     def generate_rolls(
         self, quantity: int, save_rolls: bool = True
     ) -> List[RollRecord]:
+        _SERVER_SEED_ROTATION = 70
+        _CLIENT_SEED_ROTATIONS = 3
+        client_rotation_every = quantity // (_CLIENT_SEED_ROTATIONS + 1)
+
         rolls: List[RollRecord] = []
         records = []
 
         server_seed = self._generate_server_seed()
+        client_seed = self._client_seed
+        session_nonce = 0
 
         commitment = self._commit(server_seed)
         self._logger.info(f"Commitment (SHA-256 of server seed): {commitment}")
-        self._logger.info(f"Client seed: {self._client_seed}")
+        self._logger.info(f"Client seed: {client_seed}")
 
         for i in range(quantity):
-            nonce = i + 1
+            if client_rotation_every > 0 and i > 0 and i % client_rotation_every == 0:
+                client_seed = os.urandom(16).hex()
+                self._logger.info(f"Roll {i + 1}: client seed rotated -> {client_seed[:8]}...")
 
-            self._logger.info(f"Roll {nonce}/{quantity}...")
+            if i > 0 and i % _SERVER_SEED_ROTATION == 0:
+                server_seed = self._generate_server_seed()
+                session_nonce = 0
+                commitment = self._commit(server_seed)
+                self._logger.info(
+                    f"Roll {i + 1}: new session — server seed rotated, commitment: {commitment[:16]}..."
+                )
+
+            session_nonce += 1
+
+            self._logger.info(f"Roll {i + 1}/{quantity} (session nonce {session_nonce})...")
 
             raw_output = self._generate_raw_output(
                 server_seed=server_seed,
-                client_seed=self._client_seed,
-                nonce=nonce,
+                client_seed=client_seed,
+                nonce=session_nonce,
                 cursor=0,
             )
 
@@ -129,12 +147,9 @@ class StakesHMACMechanism(ProvablyFairDiceMechanism):
 
             records.append(
                 {
-                    # The server seed is stored in plaintext here because this is
-                    # a post-session record. In a real system it would only be
-                    # revealed after the session ends and the commitment is verified.
                     "server_seed": server_seed,
-                    "client_seed": self._client_seed,
-                    "nonce": nonce,
+                    "client_seed": client_seed,
+                    "nonce": session_nonce,
                     "raw_output": raw_output.hex(),
                     "outcome": outcome,
                     "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -145,8 +160,8 @@ class StakesHMACMechanism(ProvablyFairDiceMechanism):
             rolls.append(
                 RollRecord(
                     server_seed=server_seed,
-                    client_seed=self._client_seed,
-                    nonce=nonce,
+                    client_seed=client_seed,
+                    nonce=session_nonce,
                     raw_output=raw_output,
                     outcome=outcome,
                     timestamp=datetime.now(timezone.utc),
@@ -154,7 +169,7 @@ class StakesHMACMechanism(ProvablyFairDiceMechanism):
                 )
             )
 
-            self._logger.info(f"Nonce {nonce} -> outcome={outcome:.2f}")
+            self._logger.info(f"Nonce {session_nonce} -> outcome={outcome:.2f}")
 
         df = pd.DataFrame(records)
 
