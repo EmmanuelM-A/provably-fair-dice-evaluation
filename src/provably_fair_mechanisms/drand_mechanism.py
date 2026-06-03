@@ -21,6 +21,7 @@ published every 3 seconds and are permanently retrievable by round number.
 import hashlib
 import os
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from typing import List
 
@@ -133,7 +134,7 @@ class BlockRandDrandMechanism(ProvablyFairDiceMechanism):
     def generate_rolls(
         self, quantity: int, save_rolls: bool = True
     ) -> List[RollRecord]:
-        _SERVER_SEED_ROTATION = 70
+        _SERVER_SEED_ROTATION = 190
         _CLIENT_SEED_ROTATIONS = 3
         client_rotation_every = quantity // (_CLIENT_SEED_ROTATIONS + 1)
 
@@ -157,6 +158,34 @@ class BlockRandDrandMechanism(ProvablyFairDiceMechanism):
         rolls: List[RollRecord] = []
         records = []
 
+        # 3. Pre-fetch all beacon rounds concurrently before the processing loop.
+        all_rounds = list(range(start_round, start_round + quantity))
+        beacons: dict[int, dict] = {}
+
+        def _fetch_round(round_number: int) -> tuple:
+            beacon = None
+            while beacon is None:
+                try:
+                    beacon = self._fetch_beacon_by_round(round_number)
+                except requests.HTTPError as exc:
+                    if exc.response.status_code in (404, 425):
+                        self._logger.debug(
+                            f"Round {round_number} not yet available, "
+                            f"waiting {period_seconds}s..."
+                        )
+                        time.sleep(period_seconds)
+                    else:
+                        raise
+            return round_number, beacon
+
+        self._logger.info(f"Pre-fetching {quantity} drand beacons concurrently...")
+        with ThreadPoolExecutor(max_workers=32) as executor:
+            futures = {executor.submit(_fetch_round, r): r for r in all_rounds}
+            for future in as_completed(futures):
+                round_number, beacon = future.result()
+                beacons[round_number] = beacon
+        self._logger.info("Beacon pre-fetch complete.")
+
         for i in range(quantity):
             # Rotate player_secret (client seed) — nonce continues unaffected.
             if client_rotation_every > 0 and i > 0 and i % client_rotation_every == 0:
@@ -174,26 +203,11 @@ class BlockRandDrandMechanism(ProvablyFairDiceMechanism):
             target_round = start_round + i
 
             self._logger.debug(
-                f"Roll {i + 1}/{quantity} — fetching round {target_round}..."
+                f"Roll {i + 1}/{quantity} — round {target_round}..."
             )
 
-            # 3. Wait for the agreed drand round to be published.
-            beacon = None
-            while beacon is None:
-                try:
-                    beacon = self._fetch_beacon_by_round(target_round)
-                except requests.HTTPError as exc:
-                    if exc.response.status_code in (404, 425):
-                        self._logger.debug(
-                            f"Round {target_round} not yet available, "
-                            f"waiting {period_seconds}s..."
-                        )
-                        time.sleep(period_seconds)
-                    else:
-                        raise
-
             # 4. Derive the final seed from all three inputs.
-            drand_signature = beacon["signature"]
+            drand_signature = beacons[target_round]["signature"]
             raw_output = self._derive_raw_output(player_secret, server_secret, drand_signature)
 
             # 5. Map to a dice outcome via rejection sampling.
