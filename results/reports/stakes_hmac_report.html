@@ -10,17 +10,12 @@
   <style>
     body { background: #f8f9fa; }
     .section-heading {
-      border-left: 4px solid #0d6efd;
-      padding-left: 0.75rem;
       margin: 2rem 0 1rem;
     }
     .sub-heading {
-      border-left: 3px solid #6ea8fe;
-      padding-left: 0.6rem;
       margin: 1.5rem 0 0.75rem;
       font-size: 1rem;
     }
-    .stat-card { border-left: 4px solid #0d6efd; }
     .chart-container { position: relative; height: 260px; }
     .chart-container-lg { position: relative; height: 360px; }
     .param-table td, .param-table th { font-size: 0.8rem; }
@@ -36,6 +31,15 @@
     .nper-accordion .accordion-button { font-size: 0.9rem; }
     .attack-grid td { font-size: 0.82rem; vertical-align: middle; }
     .p-val { font-family: monospace; font-size: 0.85rem; }
+    .card { box-shadow: none !important; }
+    .accordion-button:not(.collapsed) {
+      background-color: #fff;
+      color: inherit;
+      box-shadow: none;
+    }
+    .accordion-button:focus {
+      box-shadow: none;
+    }
   </style>
 </head>
 <body>
@@ -73,7 +77,7 @@
 
         
         <div class="col-sm-6 col-xl-3">
-          <div class="card stat-card h-100">
+          <div class="card h-100">
             <div class="card-body">
               <h6 class="text-muted mb-1">Randomness</h6>
               <div class="fs-5 fw-bold">1000 rolls</div>
@@ -94,7 +98,7 @@
 
         
         <div class="col-sm-6 col-xl-3">
-          <div class="card stat-card h-100" style="border-left-color:#1eab69">
+          <div class="card h-100">
             <div class="card-body">
               <h6 class="text-muted mb-1">Security</h6>
               
@@ -114,7 +118,7 @@
 
         
         <div class="col-sm-6 col-xl-3">
-          <div class="card stat-card h-100" style="border-left-color:#e4eb17">
+          <div class="card h-100">
             <div class="card-body">
               <h6 class="text-muted mb-1">Transparency</h6>
               
@@ -134,7 +138,7 @@
 
         
         <div class="col-sm-6 col-xl-3">
-          <div class="card stat-card h-100" style="border-left-color:#4f2898">
+          <div class="card h-100">
             <div class="card-body">
               <h6 class="text-muted mb-1">Non-Programmable</h6>
               <div class="fs-5 fw-bold">hmac-sha256</div>
@@ -350,7 +354,7 @@
       <div class="card mb-3">
         <div class="card-body p-0">
           
-<table class="table table-sm table-hover">
+<table class="table table-sm">
   <thead class="table-light">
     <tr>
       <th>Test</th>
