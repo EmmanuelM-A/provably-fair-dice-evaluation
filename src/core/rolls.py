@@ -2,20 +2,17 @@
 The standalone script to generate the dice rolls for the evaluation.
 
 
---c COUNT: Number of rolls to generate. Default is 1000
---t TIER: Evaluation depth tier (LIGHT, IN_DEPTH, FULL_DEPTH). Default is LIGHT.
---d path/to/rolls.csv: The file path to save generated rolls. REQUIRED
---r path/to/results.json: The file path to save evaluation results. REQUIRED
---np path/to/nper.json: The file path to collected nper values REQUIRED
+--c COUNT   : Number of rolls to generate (default: 1000)
+--d NAME    : Filename for the generated rolls (no extension) - REQUIRED
 
 
-generate_rolls: python src.core.rolls --c COUNT --d DATA_PATH
+generate_rolls: python -m src.core.rolls --c COUNT --d NAME
 
-evaluate: python src.core.evaluate --r RESULTS_PATH --t TIER --d DATA_PATH
+evaluate:       python -m src.core.evaluate --d NAME --r NAME --t TIER
 
-report: python src.core.report --r RESULTS_PATH --np NPER_PATH
+report:         python -m src.core.report --d NAME --r NAME --np NAME
 
-run_all: python src.core.run_all --c COUNT --t TIER --d DATA_PATH --r RESULTS_PATH --np NPER_PATH
+run_all:        python -m src.core.run --c COUNT --t TIER --d NAME --r NAME --np NAME
 
 """
 
@@ -57,6 +54,6 @@ def main():
 
 if __name__ == "__main__":
     """
-    Usage: python -m src.core.rolls --c COUNT --d path/to/rolls.csv
+    Usage: python -m src.core.rolls --c COUNT --d NAME
     """
     main()

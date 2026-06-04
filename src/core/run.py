@@ -101,10 +101,10 @@ if __name__ == "__main__":
     """
     Args:
         --c  : The number of rolls to generate (default: 1000)
-        --d  : The filepath to save the generated rolls CSV - REQUIRED
-        --r  : The filepath to save the programmable evaluation results (per) JSON - REQUIRED
-        --np : The filepath to the non-programmable evaluation results (nper) JSON - REQUIRED
-        --o  : The filename for the output report (no extension). 
+        --d  : The filename for the generated rolls (no extension) - REQUIRED
+        --r  : The filename for the programmable evaluation results (no extension) - REQUIRED
+        --np : The filename of the non-programmable evaluation results (no extension) - REQUIRED
+        --o  : The filename for the output report (no extension) - OPTIONAL (defaults to the same name as --r)
         
     Usage: python -m src.core.run --c COUNT --d NAME --r NAME --np NAME --o filename
     """
