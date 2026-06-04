@@ -5,13 +5,13 @@ BetSwirl's on-chain dice game with a session-based derivation scheme.
 Implementation source: BetSwirl (https://www.betswirl.com)
 Algorithm:
     1. A single VRF request is submitted on-chain to obtain a verifiable
-       random uint256 word, which becomes the session server_seed.
+        random uint256 word, which becomes the session server_seed.
     2. Individual roll outputs are derived offline via HMAC-SHA256:
-       raw_output = HMAC-SHA256(key=server_seed_bytes, msg="{client_seed}{nonce}")
+        raw_output = HMAC-SHA256(key=server_seed_bytes, msg="{client_seed}{nonce}")
     3. Dice outcome: (int.from_bytes(raw_output, "big") % 100) + 1
-       applying BetSwirl's modulo formula to the HMAC-derived bytes.
+        applying BetSwirl's modulo formula to the HMAC-derived bytes.
     4. Verification: recompute the HMAC locally from the disclosed server_seed
-       and confirm the outcome matches.
+        and confirm the outcome matches.
 
 One VRF request seeds the entire session — no further on-chain calls are made
 per roll, keeping gas costs practical for bulk generation.
@@ -73,23 +73,6 @@ class BetSwirlChainlinkMechanism(ProvablyFairDiceMechanism):
     """
     Provably fair dice mechanism replicating BetSwirl's on-chain Chainlink
     VRF v2.5 dice game.
-
-    Source: https://www.betswirl.com
-
-    Algorithm (from BetSwirl's published dice contract):
-    1. requestRandomWords(enableNativePayment=False, numWords=1) is called
-       on-chain for each individual dice roll.
-    2. Chainlink VRF fulfils the request with a verifiable random uint256 word.
-    3. Dice outcome: uint8((randomWords[0] % 100) + 1) -> integer in [1, 100].
-    4. Verification: call getRequestStatus(requestId), recompute the formula,
-       compare to the stored outcome.
-
-    Fields in RollRecord:
-    - server_seed : hex of the 32-byte VRF random word (the verifiable randomness).
-    - client_seed : consumer contract address (the on-chain requester).
-    - nonce       : VRF requestId (on-chain handle used for post-game verification).
-    - raw_output  : big-endian bytes of the VRF random word.
-    - outcome     : (raw_word % 100) + 1, range [1.0, 100.0].
     """
 
     # ========================= MECHANISM SPECIFIC =========================

@@ -5,14 +5,14 @@ BlockRand's three-input commit-reveal protocol.
 Implementation source: BlockRand (https://blockrand.io)
 Algorithm:
     1. Server generates server_secret = os.urandom(32).hex() and publishes
-       SHA256(server_secret) as a commitment before the game.
+        SHA256(server_secret) as a commitment before the game.
     2. Player supplies player_secret (client_seed).
     3. A future drand round is agreed upon; once published, its BLS threshold
-       signature is used as the on-chain randomness input.
+        signature is used as the on-chain randomness input.
     4. Final seed: SHA256(player_secret:server_secret:drand_signature).
     5. Outcome: rejection sampling on the seed bytes -> integer in [1, 100].
     6. Verification: re-fetch the drand signature for the stored round, recompute
-       SHA256, apply rejection sampling, compare to stored outcome.
+        SHA256, apply rejection sampling, compare to stored outcome.
 
 The drand quicknet chain (unchained BLS12-381 G1) is used; beacons are
 published every 3 seconds and are permanently retrievable by round number.
@@ -47,24 +47,6 @@ class BlockRandDrandMechanism(ProvablyFairDiceMechanism):
     """
     Provably fair dice mechanism replicating BlockRand's drand-based
     commit-reveal protocol.
-
-    Source: https://blockrand.io
-
-    Algorithm (from BlockRand's published specification):
-    1. Server generates server_secret and publishes SHA256(server_secret)
-       as a pre-game commitment — the secret is revealed only post-game.
-    2. Player provides player_secret (client_seed).
-    3. Server and player agree on a future drand round as the randomness source.
-    4. Once the beacon is published, the final seed is derived as:
-       SHA256(player_secret:server_secret:drand_signature)
-    5. Dice outcome: rejection sampling on the seed bytes -> integer in [1, 100].
-
-    Fields in RollRecord:
-    - server_seed : server_secret (revealed post-game, committed pre-game).
-    - client_seed : player_secret (player-provided).
-    - nonce       : drand round number (permanent beacon reference).
-    - raw_output  : SHA256(player_secret:server_secret:drand_signature).
-    - outcome     : rejection_sampling(raw_output), range [1.0, 100.0].
     """
     # ========================= MECHANISM SPECIFIC =========================
 

@@ -54,6 +54,9 @@ def get_evaluation_configs() -> EvaluationConfig:
     Utility function to centralize configuring evaluation configs.
     """
     return EvaluationConfig(
-        n_faces=MAX_VALUE, # 100 so all it produces outcomes [1, 100]
+        n_faces=100, # outcomes between 1 and 100 inclusive
         distribution_min_rolls=500,
+        n_latency_requests = 100,
+        n_startup_requests = 200,
+        n_load_requests = 100
     )

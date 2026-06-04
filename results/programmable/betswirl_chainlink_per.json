@@ -1,7 +1,7 @@
 {
     "mechanism": "BetSwirl Chainlink VRF v2.5 Mechanism",
     "tier": "IN_DEPTH",
-    "saved_at": "2026-06-03 16:04:02",
+    "saved_at": "2026-06-03 18:23:34",
     "halted_at": "LIGHT",
     "randomness": {
         "n_rolls": 1000,

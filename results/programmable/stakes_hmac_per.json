@@ -1,7 +1,7 @@
 {
     "mechanism": "HMAC-SHA256 Mechanism",
     "tier": "IN_DEPTH",
-    "saved_at": "2026-06-03 16:07:46",
+    "saved_at": "2026-06-03 16:29:08",
     "halted_at": null,
     "randomness": {
         "n_rolls": 1000,
@@ -9,36 +9,36 @@
         "light": {
             "sanity_check": {
                 "passed": true,
-                "chi_square_stat": 66.19999999999999,
-                "p_value": 0.99540250508372,
-                "message": "Sanity check passed: outcomes appear uniform (chi2=66.20, p=9.9540e-01)."
+                "chi_square_stat": 95.39999999999998,
+                "p_value": 0.5837373137429279,
+                "message": "Sanity check passed: outcomes appear uniform (chi2=95.40, p=5.8374e-01)."
             },
             "cramer_von_mises": {
                 "test_name": "Cramer-von Mises Uniformity Test",
-                "p_value": 0.6097078940424252,
+                "p_value": 0.3155281772135202,
                 "passed": true,
                 "parameters_used": {
                     "n_rolls": 1000,
-                    "obs_min": 0.03,
-                    "obs_max": 99.96,
-                    "statistic": 0.09506518368521981,
+                    "obs_min": 0.24,
+                    "obs_max": 100.0,
+                    "statistic": 0.17756823084839563,
                     "normalisation": "(outcome - obs_min) / (obs_max - obs_min)",
                     "reference_cdf": "uniform(0, 1)"
                 }
             },
             "runs_independence": {
                 "test_name": "Runs Independence Test",
-                "p_value": 0.8001840417178969,
+                "p_value": 0.22925994436334762,
                 "passed": true,
                 "parameters_used": {
                     "n_rolls": 1000,
-                    "median": 50.375,
+                    "median": 50.785,
                     "n_above_median": 500,
                     "n_below_or_equal_median": 500,
-                    "observed_runs": 505,
+                    "observed_runs": 482,
                     "expected_runs": 501.0,
                     "variance_runs": 249.74974974974975,
-                    "z_statistic": 0.25310892567531673
+                    "z_statistic": -1.2022673969577546
                 }
             },
             "server_seed_min_entropy": {
@@ -57,76 +57,76 @@
             "nist_light": {
                 "frequency_monobit": {
                     "test_name": "Frequency (Monobit) Test",
-                    "p_value": 0.8526142992573196,
+                    "p_value": 0.4431693174391357,
                     "passed": true,
                     "parameters_used": {
                         "n": 256000,
-                        "s_obs": 0.1857838125348923
+                        "s_obs": 0.766852332590832
                     }
                 },
                 "frequency_block": {
                     "test_name": "Frequency within a Block",
-                    "p_value": 0.09261271245077461,
+                    "p_value": 0.4381810859494459,
                     "passed": true,
                     "parameters_used": {
                         "n": 256000,
                         "M": 128,
                         "N": 2000,
-                        "chi_sq": 2084.28125
+                        "chi_sq": 2009.1875
                     }
                 },
                 "runs": {
                     "test_name": "Runs Test",
-                    "p_value": 0.3674920716205775,
+                    "p_value": 0.24470700550200838,
                     "passed": true,
                     "parameters_used": {
                         "n": 256000,
-                        "pi": 0.50018359375,
-                        "v_obs": 127772
+                        "pi": 0.5007578125,
+                        "v_obs": 128294
                     }
                 },
                 "longest_run_ones": {
                     "test_name": "Longest Run of Ones in a Block",
-                    "p_value": 0.5448008513476781,
+                    "p_value": 0.1375860834485212,
                     "passed": true,
                     "parameters_used": {
                         "n": 256000,
                         "M": 8,
                         "N": 32000,
-                        "chi_sq": 2.1353177504396204
+                        "chi_sq": 5.517661307606727
                     }
                 },
                 "binary_matrix_rank": {
                     "test_name": "Binary Matrix Rank Test",
-                    "p_value": 0.17174226029277276,
+                    "p_value": 0.76664691435343,
                     "passed": true,
                     "parameters_used": {
                         "n": 256000,
                         "M": 32,
                         "Q": 32,
                         "num_matrices": 250,
-                        "chi_sq": 3.5235208253852406
+                        "chi_sq": 0.5314578599034614
                     }
                 },
                 "dft_spectral": {
                     "test_name": "Discrete Fourier Transform (Spectral) Test",
-                    "p_value": 0.15191054369171025,
+                    "p_value": 0.913344120114607,
                     "passed": true,
                     "parameters_used": {
                         "n": 256000,
                         "threshold": 875.7325288831059,
-                        "n_below_threshold": 121521,
+                        "n_below_threshold": 121594,
                         "expected_below_threshold": 121600.0
                     }
                 },
                 "cumulative_sums": {
                     "test_name": "Cumulative Sums Test",
-                    "p_value": 0.5484297957439468,
+                    "p_value": 0.4598815083718406,
                     "passed": true,
                     "parameters_used": {
                         "n": 256000,
-                        "p_value_forward": 0.5484297957439468,
-                        "p_value_backward": 0.7174978856927718
+                        "p_value_forward": 0.4598815083718406,
+                        "p_value_backward": 0.5741666432257462
                     }
                 }
             }
@@ -200,7 +200,73 @@
         "in_depth": null,
         "full_depth": null
     },
-    "performance": null,
+    "performance": {
+        "light": {
+            "latency": {
+                "test_name": "dice_generation_latency",
+                "n_requests": 100,
+                "mean_ms": 0.31109099509194493,
+                "median_ms": 0.27540000155568123,
+                "p75_ms": 0.2934750518761575,
+                "p90_ms": 0.3655999898910523,
+                "p99_ms": 0.7792421081103387,
+                "min_ms": 0.26100012473762035,
+                "max_ms": 0.8229999803006649,
+                "std_ms": 0.1064174829438097
+            },
+            "summary": {
+                "mean_latency_ms": 0.3111,
+                "p99_latency_ms": 0.7792
+            }
+        },
+        "in_depth": {
+            "startup_steady_state": {
+                "test_name": "startup_vs_steady_state",
+                "n_requests": 200,
+                "cov_threshold": 0.02,
+                "startup_n": 200,
+                "startup_mean_ms": 0.2951709949411452,
+                "startup_std_ms": 0.052181742431369624,
+                "steady_state_n": 0,
+                "steady_state_mean_ms": 0.0,
+                "steady_state_std_ms": 0.0,
+                "steady_state_cov": 0.0,
+                "steady_state_declared_at": -1
+            },
+            "throughput_under_load": {
+                "10": {
+                    "concurrency": 10,
+                    "actual_workers": 10,
+                    "n_requests": 100,
+                    "requests_per_second": 1894.9012007314877,
+                    "mean_latency_ms": 4.795411000959575,
+                    "p99_latency_ms": 6.811356055550277
+                },
+                "100": {
+                    "concurrency": 100,
+                    "actual_workers": 100,
+                    "n_requests": 100,
+                    "requests_per_second": 1548.117028042225,
+                    "mean_latency_ms": 29.262447995133698,
+                    "p99_latency_ms": 37.95266603818163
+                },
+                "1000": {
+                    "concurrency": 1000,
+                    "actual_workers": 100,
+                    "n_requests": 100,
+                    "requests_per_second": 1493.5136715039619,
+                    "mean_latency_ms": 28.702871003188193,
+                    "p99_latency_ms": 38.459664061665535
+                }
+            },
+            "summary": {
+                "steady_state_reached": false,
+                "steady_state_mean_ms": 0.0,
+                "peak_requests_per_second": 1894.9
+            }
+        },
+        "full_depth": null
+    },
     "transparency": {
         "n_rolls": 1000,
         "light": {

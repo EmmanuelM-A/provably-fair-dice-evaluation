@@ -43,9 +43,6 @@ def load_roll_records_from(file: str | Path) -> List[RollRecord]:
     if missing_columns:
         raise ValueError(f"The CSV is missing required columns: {sorted(missing_columns)}")
 
-    # client_seed may legitimately be empty for mechanisms that take no client
-    # input (e.g. drand). Pandas reads empty CSV cells as NaN, so fill first
-    # then exclude client_seed from the dropna and non-empty checks.
     df["client_seed"] = df["client_seed"].fillna("")
     _must_be_non_empty = [c for c in _REQUIRED_COLUMNS if c != "client_seed"]
 

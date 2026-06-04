@@ -4,6 +4,7 @@ from typing import Any, Dict
 
 @dataclass
 class TestResult:
+    """Represents the result of a single test."""
     test_name: str
     p_value: float
     passed: bool
@@ -16,6 +17,7 @@ class TestResult:
 
 @dataclass
 class BinaryResult:
+    """Represents the result of a binary test."""
     test_name: str
     passed: bool
     message: str

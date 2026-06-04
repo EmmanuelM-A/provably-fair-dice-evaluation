@@ -7,6 +7,7 @@ from datetime import datetime
 
 @dataclass
 class RollRecord:
+    """Represents a single random number generation record with all relevant fields."""
     server_seed: str
     client_seed: str
     nonce: int
@@ -18,6 +19,7 @@ class RollRecord:
 
 @dataclass
 class VerificationResult:
+    """Represents the result of verifying a single roll record."""
     record: RollRecord
     disclosed_server_seed: str
     recomputed_outcome: float

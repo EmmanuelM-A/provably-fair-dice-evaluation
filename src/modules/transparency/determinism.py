@@ -1,3 +1,4 @@
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import List
 
 from src.enigines.pfd import ProvablyFairDiceMechanism
@@ -24,10 +25,14 @@ def determinism_test(
         )
 
     mismatches: List[int] = []
-    for i, record in enumerate(rolls):
-        result = mechanism.verify(record)
-        if not result.match:
-            mismatches.append(i)
+    with ThreadPoolExecutor(max_workers=32) as executor:
+        futures = {executor.submit(mechanism.verify, record): i for i, record in enumerate(rolls)}
+        for future in as_completed(futures):
+            i = futures[future]
+            result = future.result()
+            if not result.match:
+                mismatches.append(i)
+    mismatches.sort()
 
     passed = len(mismatches) == 0
     message = (

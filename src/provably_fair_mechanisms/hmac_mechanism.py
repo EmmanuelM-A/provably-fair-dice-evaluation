@@ -32,9 +32,9 @@ class StakesHMACMechanism(ProvablyFairDiceMechanism):
     1. Server seed: os.urandom(32).hex()  — 64-char hex string.
     2. Commitment:  SHA-256(server_seed)  — published before any bets.
     3. Per-roll:    HMAC-SHA256(key=server_seed, msg="{client_seed}:{nonce}:{cursor}")
-       where cursor = 0 for single-outcome games.
+        where cursor = 0 for single-outcome games.
     4. Outcome:     floor(bytes_to_number(digest[:4]) * MAX_ROLL) / 100
-       giving a float in [0.00, 100.00] with two decimal places.
+        giving a float in [0.00, 100.00] with two decimal places.
     """
 
     # ========================= MECHANISM SPECIFIC =========================
