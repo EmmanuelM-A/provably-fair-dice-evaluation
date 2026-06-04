@@ -3,34 +3,34 @@
 
     "bareSHA256Check": {
         "isHmacSha256Used": false,
-        "evidence": "BlockRand derives the final seed as SHA256(player_secret:server_secret:drand_signature) this is bare SHA-256 over a concatenated input, not HMAC-SHA256. In principle, length-extension attacks are applicable. In practice the risk is low because none of the three inputs are attacker-controlled during the bet, but the construction is not formally secure against this class of attack."
+        "evidence": "BlockRand derives the final seed as SHA256(player_secret:server_secret:drand_signature). This is bare SHA-256 over a concatenated input, not HMAC-SHA256. Length-extension attacks are theoretically applicable. The risk is low because none of the three inputs are attacker-controlled during the bet, but the construction is not formally secure against this class of attack."
     },
 
     "csprngCompliance": {
         "isCsprngUsed": true,
         "generatorName": "drand quicknet (BLS12-381 G1 threshold signature)",
         "isApprovedConstruction": true,
-        "evidence": "drand produces randomness via a threshold BLS12-381 signature over the round number. This is a well-studied, bias-resistant construction. The League of Entropy nodes are operated by independent institutions, making the output cryptographically unpredictable unless a threshold of nodes collude."
+        "evidence": "drand produces randomness via a threshold BLS12-381 signature over the round number. This is a well-studied, bias-resistant construction. The League of Entropy nodes are operated by independent institutions. The output is cryptographically unpredictable unless a threshold of nodes collude."
     },
 
     "clientSeedGenerationSource": {
         "generatedClientSide": true,
-        "evidence": "BlockRand's protocol requires the player to supply their own player_secret before the game begins. The server does not generate or suggest this value — it is entirely the player's responsibility."
+        "evidence": "BlockRand's protocol requires the player to supply their own player_secret before the game begins. The server does not generate or suggest this value. Providing a secure player_secret is entirely the player's responsibility."
     },
 
     "commitmentTiming": {
         "evidenceCategory": 0.5,
-        "evidenceDescription": "The server commits SHA256(server_secret) before the player places a bet, and the agreed future drand round acts as an independent temporal anchor (the round number is publicly known and its signature hasn't been published yet). However, the server commitment itself is not on-chain or timestamped by a third party — you are trusting BlockRand's server logs that the commitment was made before the client seed was received."
+        "evidenceDescription": "The server commits SHA256(server_secret) before the player places a bet, and the agreed future drand round acts as an independent temporal anchor (the round number is publicly known and its signature has not been published yet). The server commitment is not on-chain or timestamped by a third party. You are trusting BlockRand's server logs as proof the commitment was made before the client seed was received."
     },
 
     "attackVectorClassification": {
         "dishonestOperator": {
             "resisted": true,
-            "reasoning": "Assuming the protocol is followed correctly: the operator commits SHA256(server_secret) before receiving the player_secret, and the drand round is agreed in advance. The operator cannot pick a favourable server_secret after seeing the player's input because they have already published its hash. The drand output is outside the operator's control."
+            "reasoning": "Assuming the protocol is followed correctly, the operator commits SHA256(server_secret) before receiving the player_secret, and the drand round is agreed in advance. The operator is unable to pick a favourable server_secret after seeing the player's input, as they have already published its hash. The drand output is outside the operator's control."
         },
         "maliciousPlayer": {
             "resisted": true,
-            "reasoning": "The player does not know server_secret at bet time — only its SHA-256 hash is disclosed. Without knowing both server_secret and the future drand signature, the player cannot predict or reverse-engineer the outcome, even if they choose their player_secret strategically."
+            "reasoning": "The player does not know server_secret at bet time. Only its SHA-256 hash is disclosed. Without knowing both server_secret and the future drand signature, the player is unable to predict or reverse-engineer the outcome, even if they choose their player_secret strategically."
         },
         "externalEavesdropper": {
             "resisted": true,
@@ -38,7 +38,7 @@
         },
         "compromisedOracle": {
             "resisted": true,
-            "reasoning": "drand uses a t-of-n threshold BLS signature across the League of Entropy. A single compromised node cannot bias or predict the output — collusion of t nodes is required. The threshold is documented in the chain's group configuration."
+            "reasoning": "drand uses a t-of-n threshold BLS signature across the League of Entropy. A single compromised node is unable to bias or predict the output. Collusion of t nodes is required. The threshold is documented in the chain's group configuration."
         }
     },
 
@@ -47,7 +47,7 @@
         "reqIdContractControlled": null,
         "preseedComputedOnChain": null,
         "blockHashReferencesFutureBlock": null,
-        "evidence": "Not applicable. This mechanism uses drand beacons, not a VRF contract."
+        "evidence": "Not applicable."
     },
 
     "drandFutureRoundCommitmentStrategy": {
@@ -56,7 +56,7 @@
         "commitmentAnchorMandatory": true,
         "contractPreventsEarlySettlement": true,
         "failedRoundsCount": 0,
-        "evidence": "BlockRand's protocol mandates that the agreed drand round (current_round + k, k >= 1) is locked before the bet is accepted. Settlement is refused until the target beacon is published. Reviewing 100 rounds of protocol documentation shows consistent enforcement of this ordering. Note: our simulation implementation uses historical rounds for practical bulk generation, which would violate this constraint in a live deployment."
+        "evidence": "BlockRand's protocol requires the agreed drand round (current_round + k, k >= 1) to be locked before the bet is accepted. Settlement is refused until the target beacon is published. Reviewing 100 rounds of protocol documentation shows consistent enforcement of this ordering. The simulation implementation uses historical rounds for practical bulk generation, which would violate this constraint in a live deployment."
     },
 
     "dkgPhaseIntegrity": {
@@ -64,7 +64,7 @@
         "keyConsistency": {
             "allNodesAgreePostResharing": true,
             "nodesChecked": 2,
-            "evidence": "The quicknet chain public key was verified to be consistent across the Cloudflare (drand.cloudflare.com) and drand.sh endpoints via the /info endpoint. Both return the same group public key, confirming no DKG equivocation has occurred."
+            "evidence": "The quicknet chain public key was verified as consistent across the Cloudflare (drand.cloudflare.com) and drand.sh endpoints via the /info endpoint. Both return the same group public key, confirming no DKG equivocation has occurred."
         },
         "resharingRecency": {
             "latestResharingTimestamp": "2023-07-03T00:00:00Z",
@@ -84,7 +84,7 @@
         "usesOneOffSeedsPerRound": false,
         "ifSharedPrngStateUpdateFormallyDocumented": false,
         "ifSharedPrngStateUpdateProvablyOneWay": null,
-        "evidence": "server_secret is shared across all rolls in a session. SHA-256 is one-way, but the multi-round session construction (SHA256(player:server:sig_r) for each round r) has not been formally documented as a provably-one-way DRBG. Once the server discloses server_secret post-session, any third party can recompute every roll's outcome — this is by design for verification, but means all session outcomes become computable simultaneously."
+        "evidence": "server_secret is shared across all rolls in a session. SHA-256 is one-way, but the multi-round session construction (SHA256(player:server:sig_r) for each round r) has not been formally documented as a provably-one-way DRBG. Once the server discloses server_secret post-session, any third party is able to recompute every roll's outcome. This is by design for verification, but means all session outcomes become reproducible at the same time."
     },
 
     "nonceManagement": {
@@ -93,21 +93,21 @@
         "noResetWithoutSeedRotation": true,
         "overflowPolicyDocumented": false,
         "overflowPolicyDescription": null,
-        "evidence": "The nonce is the drand round number, which starts at whatever the current round is (a large integer, not 0). It increments by 1 per roll. A new session generates a fresh server_secret, which constitutes a seed rotation. No overflow policy is documented, though drand rounds will not overflow a 64-bit integer for centuries at the current 3-second period."
+        "evidence": "The nonce is the drand round number, starting at whatever the current round is (a large integer, not 0). The nonce increments by 1 per roll. A new session generates a fresh server_secret, which constitutes a seed rotation. No overflow policy is documented, though drand rounds will not overflow a 64-bit integer for centuries at the current 3-second period."
     },
 
     "clientSeedRotationBehaviour": {
         "defaultSeedSource": "client_side",
         "rotationGuidanceAvailability": "present",
         "rotationRecommendation": "per_session",
-        "evidence": "BlockRand requires the player to provide a new player_secret for each game session. The documentation makes clear this should be a fresh value each time to maintain the security of the commit-reveal protocol."
+        "evidence": "BlockRand requires the player to provide a new player_secret for each game session. The documentation states this should be a fresh value each time to maintain the security of the commit-reveal protocol."
     },
 
     "vrfSecurityAssessment": {
         "applicable": false,
         "outputManipulationResistance": {
             "enforced": null,
-            "mechanism": "Not applicable. This mechanism uses drand beacons, not Chainlink VRF."
+            "mechanism": "Not applicable."
         },
         "queryInputUniqueness": {
             "status": "unspecified",
@@ -130,21 +130,21 @@
         },
         "entropySourceDisclosure": {
             "score": 1.0,
-            "justification": "drand quicknet is explicitly named, with the chain hash, beacon period, and cryptographic construction (BLS12-381 G1 threshold signature) all publicly documented and verifiable."
+            "justification": "drand quicknet is explicitly named as the entropy source. The chain hash, beacon period, and cryptographic construction (BLS12-381 G1 threshold signature) are all publicly documented and verifiable."
         },
         "historicalAuditabilityWindow": {
             "score": 1.0,
-            "justification": "drand beacons are permanently stored and retrievable by round number via multiple public endpoints. Any past round's signature can be fetched at any time, making every historical outcome independently reproducible."
+            "justification": "drand beacons are permanently stored and retrievable by round number via multiple public endpoints. You fetch any past round's signature at any time. This makes every historical outcome independently reproducible."
         },
         "verificationToolAvailability": {
             "inPlatformScore": 0.5,
             "independentThirdPartyScore": 1.0,
-            "justification": "BlockRand provides verification instructions but no one-click tool. Independent verification is fully possible: fetch the drand beacon for the stored round, recompute SHA256, apply rejection sampling. Any developer can do this with standard libraries."
+            "justification": "BlockRand provides verification instructions but no one-click tool. Independent verification is fully possible: fetch the drand beacon for the stored round, recompute SHA256, and apply rejection sampling. Any developer with standard libraries is able to do this."
         },
         "verificationFriction": {
             "expertPathScore": 1.0,
             "nonExpertPathScore": 0.0,
-            "justification": "Experts can verify by fetching the drand API, computing SHA256, and running rejection sampling — straightforward with any programming language. Non-experts have no accessible path: there is no guided UI, and the steps require understanding of hash functions and modular arithmetic."
+            "justification": "Experts verify by fetching the drand API, computing SHA256, and running rejection sampling. This is straightforward with any programming language. Non-experts have no accessible path. There is no guided UI, and the steps require understanding of hash functions and modular arithmetic."
         }
     }
 }

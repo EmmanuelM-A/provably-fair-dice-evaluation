@@ -756,7 +756,7 @@
     <span class="badge bg-success">Yes</span>
   
 </td></tr>
-                  <tr><th>Evidence</th><td class="small">Stake explicitly uses HMAC-SHA256 with the server_seed as the key and &#39;{client_seed}:{nonce}:{cursor}&#39; as the message. This is documented on their provably fair page. No bare SHA-256 concatenation is used at any stage of the outcome derivation.</td></tr>
+                  <tr><th>Evidence</th><td class="small">Stake explicitly uses HMAC-SHA256 with the server_seed as the key and &#39;{client_seed}:{nonce}:{cursor}&#39; as the message. This is documented on their provably fair page. No bare SHA-256 concatenation appears at any stage of the outcome derivation.</td></tr>
                 </tbody>
               </table>
             </div>
@@ -794,7 +794,7 @@
     <span class="badge bg-success">Yes</span>
   
 </td></tr>
-                  <tr><th>Evidence</th><td class="small">Server seeds are generated via os.urandom(32), which draws from the OS kernel&#39;s CSPRNG (/dev/urandom on Linux, CryptGenRandom on Windows). This is an approved construction per NIST SP 800-90A and is not susceptible to state reconstruction attacks.</td></tr>
+                  <tr><th>Evidence</th><td class="small">Stake generates server seeds via os.urandom(32), which draws from the OS kernel&#39;s CSPRNG (/dev/urandom on Linux, CryptGenRandom on Windows). This is an approved construction per NIST SP 800-90A and is not susceptible to state reconstruction attacks.</td></tr>
                 </tbody>
               </table>
             </div>
@@ -826,7 +826,7 @@
     <span class="badge bg-danger">No</span>
   
 </td></tr>
-                  <tr><th>Evidence</th><td class="small">Stake generates a random default client seed server-side on the player&#39;s behalf. Players can replace it with any value they choose via the UI, but the default is not player-generated. This gives Stake the technical capability to know the default client seed before it is used.</td></tr>
+                  <tr><th>Evidence</th><td class="small">Stake generates a random default client seed server-side on the player&#39;s behalf. Players replace the default with any value they choose via the UI, but the default is not player-generated. This gives Stake the technical capability to know the default client seed before play begins.</td></tr>
                 </tbody>
               </table>
             </div>
@@ -853,7 +853,7 @@
               <table class="table table-sm">
                 <tbody>
                   <tr><th>Evidence category</th><td><span class="enum-tag">0.0</span></td></tr>
-                  <tr><th>Description</th><td class="small">Stake publishes the SHA-256 hash of the server seed before play begins, but this commitment exists only on Stake&#39;s own servers. There is no on-chain timestamp, no third-party certificate, and no external record to independently confirm the hash was published before the player&#39;s client seed was received. Trust in the ordering of events is entirely based on Stake&#39;s word.</td></tr>
+                  <tr><th>Description</th><td class="small">Stake publishes the SHA-256 hash of the server seed before play begins, but this commitment exists only on Stake&#39;s own servers. There is no on-chain timestamp, no third-party certificate, and no external record to independently confirm the hash was published before the player&#39;s client seed was received. Trust in the ordering of events rests entirely on Stake&#39;s word.</td></tr>
                 </tbody>
               </table>
             </div>
@@ -889,7 +889,7 @@
     FAIL
   </span>
 </td>
-                    <td class="small text-muted">The server seed commitment is self-reported by Stake with no external verification. A dishonest operator could in principle wait to see a player&#39;s client seed before selecting and committing a server seed. There is no independent mechanism to prove the commitment preceded the client seed submission.</td>
+                    <td class="small text-muted">The server seed commitment is self-reported by Stake with no external verification. A dishonest operator is able to, in principle, wait to see a player&#39;s client seed before selecting and committing a server seed. There is no independent mechanism to prove the commitment preceded the client seed submission.</td>
                   </tr>
                   
                   
@@ -901,7 +901,7 @@
     PASS
   </span>
 </td>
-                    <td class="small text-muted">The server seed is unknown to the player at bet time — only its SHA-256 hash is shown. Without the pre-image, the player cannot compute outcomes for any client seed or nonce combination, regardless of what client seed they choose.</td>
+                    <td class="small text-muted">The server seed is unknown to the player at bet time. Only its SHA-256 hash is shown. Without the pre-image, the player is unable to compute outcomes for any client seed or nonce combination, regardless of what client seed they choose.</td>
                   </tr>
                   
                   
@@ -913,7 +913,7 @@
     PASS
   </span>
 </td>
-                    <td class="small text-muted">HMAC-SHA256 is computationally secure. An eavesdropper observing the published outcome cannot derive the server seed key from the HMAC output.</td>
+                    <td class="small text-muted">HMAC-SHA256 is computationally secure. An eavesdropper observing the published outcome is unable to derive the server seed key from the HMAC output.</td>
                   </tr>
                   
                   
@@ -925,7 +925,7 @@
     PASS
   </span>
 </td>
-                    <td class="small text-muted">No external oracle is used. Stake generates all randomness internally via os.urandom. There is no oracle attack surface — though this shifts all trust to Stake&#39;s own infrastructure security.</td>
+                    <td class="small text-muted">Stake uses no external oracle. Stake generates all randomness internally via os.urandom. There is no oracle attack surface, though this shifts all trust to Stake&#39;s own infrastructure security.</td>
                   </tr>
                   
                   
@@ -1066,7 +1066,7 @@
     <span class="badge bg-success">Yes</span>
   
 </td></tr>
-                  <tr><th>Evidence</th><td class="small">All rolls within a session share the same HMAC key (server_seed). HMAC-SHA256 is formally specified in FIPS 198-1 as a provably one-way MAC construction. Knowing any roll&#39;s raw_output does not allow an attacker to recover the server_seed or compute other rolls. Once the server_seed is disclosed post-session, all that session&#39;s outcomes become computable — this is intentional and necessary for player verification.</td></tr>
+                  <tr><th>Evidence</th><td class="small">All rolls within a session share the same HMAC key (server_seed). HMAC-SHA256 is formally specified in FIPS 198-1 as a provably one-way MAC construction. Knowing any roll&#39;s raw_output does not allow an attacker to recover the server_seed or compute other rolls. Once the server_seed is disclosed post-session, all outcomes from the session become computable. This is intentional and necessary for player verification.</td></tr>
                 </tbody>
               </table>
             </div>
@@ -1115,7 +1115,7 @@
  Overflow documented</div>
               </div>
               
-              <p class="small text-muted mb-0">Evidence: Stake&#39;s published algorithm starts the nonce at 0 and increments by 1 for every bet within a session. When a player requests a new server seed, the nonce resets to 0 alongside a fresh server_seed — this counts as seed rotation so the (server_seed, client_seed, nonce) triple remains unique. Stake does not document what happens if the nonce reaches the maximum integer value.</p>
+              <p class="small text-muted mb-0">Evidence: Stake&#39;s published algorithm starts the nonce at 0 and increments by 1 for every bet within a session. When a player requests a new server seed, the nonce resets to 0 alongside a fresh server_seed. This counts as seed rotation, so the (server_seed, client_seed, nonce) triple remains unique. Stake does not document what happens if the nonce reaches the maximum integer value.</p>
             </div>
           </div>
         </div>
@@ -1138,7 +1138,7 @@
                   <tr><th>Default seed source</th><td><span class="enum-tag">server_side</span></td></tr>
                   <tr><th>Rotation guidance availability</th><td><span class="enum-tag">present</span></td></tr>
                   <tr><th>Rotation recommendation</th><td><span class="enum-tag">per_session</span></td></tr>
-                  <tr><th>Evidence</th><td class="small">Stake generates a random default client seed on behalf of the player and displays it in the UI. Players can change it at any time. Stake&#39;s documentation recommends rotating both the server seed and client seed together when starting a new session, and the UI makes this straightforward.</td></tr>
+                  <tr><th>Evidence</th><td class="small">Stake generates a random default client seed on behalf of the player and displays the value in the UI. Players change the default at any time. Stake&#39;s documentation recommends rotating both the server seed and client seed together when starting a new session, and the UI makes this straightforward.</td></tr>
                 </tbody>
               </table>
             </div>
@@ -1187,13 +1187,13 @@
                   
                   <tr><th class="small">algorithmDisclosure</th><td class="small text-muted">Stake fully discloses the HMAC-SHA256 construction, message format (client_seed:nonce:cursor), bytes_to_number formula, and the floor(x * 10001) / 100 outcome mapping on their provably fair page. Everything needed to independently reproduce a result is published.</td></tr>
                   
-                  <tr><th class="small">entropySourceDisclosure</th><td class="small text-muted">Stake states that server seeds are randomly generated but does not explicitly name the generator (e.g. os.urandom, /dev/urandom, or HMAC-DRBG). The CSPRNG type and seeding mechanism are not named in their public documentation.</td></tr>
+                  <tr><th class="small">entropySourceDisclosure</th><td class="small text-muted">Stake states server seeds are randomly generated but does not explicitly name the generator (e.g. os.urandom, /dev/urandom, or HMAC-DRBG). The CSPRNG type and seeding mechanism are not named in their public documentation.</td></tr>
                   
-                  <tr><th class="small">historicalAuditabilityWindow</th><td class="small text-muted">Past outcomes and seed pairs are accessible via Stake&#39;s provably fair page after the server seed is revealed, but no explicit minimum retention period is stated. There is no permanent external log — if Stake deletes records, they are gone.</td></tr>
+                  <tr><th class="small">historicalAuditabilityWindow</th><td class="small text-muted">Past outcomes and seed pairs are accessible via Stake&#39;s provably fair page after the server seed is revealed, but no explicit minimum retention period is stated. There is no permanent external log. If Stake deletes records, they are gone.</td></tr>
                   
-                  <tr><th class="small">verificationToolAvailability</th><td class="small text-muted">Stake provides a built-in verification tool on their provably fair page where players enter the seed pair and nonce and get the outcome confirmed. Several unofficial third-party calculators exist but are not maintained by Stake and cannot be considered authoritative.</td></tr>
+                  <tr><th class="small">verificationToolAvailability</th><td class="small text-muted">Stake provides a built-in verification tool on their provably fair page where players enter the seed pair and nonce and get the outcome confirmed. Several unofficial third-party calculators exist but are not maintained by Stake and should not be considered authoritative.</td></tr>
                   
-                  <tr><th class="small">verificationFriction</th><td class="small text-muted">Stake&#39;s in-platform verification tool is accessible to anyone — enter your seeds and nonce, click verify. Experts can also independently replicate the HMAC computation using any standard library. Both paths are low friction.</td></tr>
+                  <tr><th class="small">verificationFriction</th><td class="small text-muted">Stake&#39;s in-platform verification tool is accessible to anyone. Enter your seeds and nonce, then click verify. Experts also independently replicate the HMAC computation using any standard library. Both paths are low friction.</td></tr>
                   
                 </tbody>
               </table>
@@ -1305,7 +1305,7 @@ function passColours(values, sig) {
 
 
 (function() {
-  const td = {"justifications": {"algorithmDisclosure": "Stake fully discloses the HMAC-SHA256 construction, message format (client_seed:nonce:cursor), bytes_to_number formula, and the floor(x * 10001) / 100 outcome mapping on their provably fair page. Everything needed to independently reproduce a result is published.", "entropySourceDisclosure": "Stake states that server seeds are randomly generated but does not explicitly name the generator (e.g. os.urandom, /dev/urandom, or HMAC-DRBG). The CSPRNG type and seeding mechanism are not named in their public documentation.", "historicalAuditabilityWindow": "Past outcomes and seed pairs are accessible via Stake\u0027s provably fair page after the server seed is revealed, but no explicit minimum retention period is stated. There is no permanent external log \u2014 if Stake deletes records, they are gone.", "verificationFriction": "Stake\u0027s in-platform verification tool is accessible to anyone \u2014 enter your seeds and nonce, click verify. Experts can also independently replicate the HMAC computation using any standard library. Both paths are low friction.", "verificationToolAvailability": "Stake provides a built-in verification tool on their provably fair page where players enter the seed pair and nonce and get the outcome confirmed. Several unofficial third-party calculators exist but are not maintained by Stake and cannot be considered authoritative."}, "labels": ["Algorithm Disclosure", "Entropy Source Disclosure", "Historical Auditability", "Verification Tool (In-Platform)", "Verification Tool (Third-Party)", "Verification Friction (Expert)", "Verification Friction (Non-Expert)"], "scores": [1.0, 0.5, 0.5, 1.0, 0.5, 1.0, 1.0]};
+  const td = {"justifications": {"algorithmDisclosure": "Stake fully discloses the HMAC-SHA256 construction, message format (client_seed:nonce:cursor), bytes_to_number formula, and the floor(x * 10001) / 100 outcome mapping on their provably fair page. Everything needed to independently reproduce a result is published.", "entropySourceDisclosure": "Stake states server seeds are randomly generated but does not explicitly name the generator (e.g. os.urandom, /dev/urandom, or HMAC-DRBG). The CSPRNG type and seeding mechanism are not named in their public documentation.", "historicalAuditabilityWindow": "Past outcomes and seed pairs are accessible via Stake\u0027s provably fair page after the server seed is revealed, but no explicit minimum retention period is stated. There is no permanent external log. If Stake deletes records, they are gone.", "verificationFriction": "Stake\u0027s in-platform verification tool is accessible to anyone. Enter your seeds and nonce, then click verify. Experts also independently replicate the HMAC computation using any standard library. Both paths are low friction.", "verificationToolAvailability": "Stake provides a built-in verification tool on their provably fair page where players enter the seed pair and nonce and get the outcome confirmed. Several unofficial third-party calculators exist but are not maintained by Stake and should not be considered authoritative."}, "labels": ["Algorithm Disclosure", "Entropy Source Disclosure", "Historical Auditability", "Verification Tool (In-Platform)", "Verification Tool (Third-Party)", "Verification Friction (Expert)", "Verification Friction (Non-Expert)"], "scores": [1.0, 0.5, 0.5, 1.0, 0.5, 1.0, 1.0]};
   new Chart(document.getElementById("transparencyScoresChart"), {
     type: "bar",
     data: {

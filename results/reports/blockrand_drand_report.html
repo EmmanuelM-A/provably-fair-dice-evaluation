@@ -10,17 +10,12 @@
   <style>
     body { background: #f8f9fa; }
     .section-heading {
-      border-left: 4px solid #0d6efd;
-      padding-left: 0.75rem;
       margin: 2rem 0 1rem;
     }
     .sub-heading {
-      border-left: 3px solid #6ea8fe;
-      padding-left: 0.6rem;
       margin: 1.5rem 0 0.75rem;
       font-size: 1rem;
     }
-    .stat-card { border-left: 4px solid #0d6efd; }
     .chart-container { position: relative; height: 260px; }
     .chart-container-lg { position: relative; height: 360px; }
     .param-table td, .param-table th { font-size: 0.8rem; }
@@ -36,6 +31,15 @@
     .nper-accordion .accordion-button { font-size: 0.9rem; }
     .attack-grid td { font-size: 0.82rem; vertical-align: middle; }
     .p-val { font-family: monospace; font-size: 0.85rem; }
+    .card { box-shadow: none !important; }
+    .accordion-button:not(.collapsed) {
+      background-color: #fff;
+      color: inherit;
+      box-shadow: none;
+    }
+    .accordion-button:focus {
+      box-shadow: none;
+    }
   </style>
 </head>
 <body>
@@ -73,7 +77,7 @@
 
         
         <div class="col-sm-6 col-xl-3">
-          <div class="card stat-card h-100">
+          <div class="card h-100">
             <div class="card-body">
               <h6 class="text-muted mb-1">Randomness</h6>
               <div class="fs-5 fw-bold">1000 rolls</div>
@@ -94,7 +98,7 @@
 
         
         <div class="col-sm-6 col-xl-3">
-          <div class="card stat-card h-100" style="border-left-color:#1eab69">
+          <div class="card h-100">
             <div class="card-body">
               <h6 class="text-muted mb-1">Security</h6>
               
@@ -114,7 +118,7 @@
 
         
         <div class="col-sm-6 col-xl-3">
-          <div class="card stat-card h-100" style="border-left-color:#e4eb17">
+          <div class="card h-100">
             <div class="card-body">
               <h6 class="text-muted mb-1">Transparency</h6>
               
@@ -134,7 +138,7 @@
 
         
         <div class="col-sm-6 col-xl-3">
-          <div class="card stat-card h-100" style="border-left-color:#4f2898">
+          <div class="card h-100">
             <div class="card-body">
               <h6 class="text-muted mb-1">Non-Programmable</h6>
               <div class="fs-5 fw-bold">blockrand-drand-quicknet</div>
@@ -350,7 +354,7 @@
       <div class="card mb-3">
         <div class="card-body p-0">
           
-<table class="table table-sm table-hover">
+<table class="table table-sm">
   <thead class="table-light">
     <tr>
       <th>Test</th>
@@ -752,7 +756,7 @@
     <span class="badge bg-danger">No</span>
   
 </td></tr>
-                  <tr><th>Evidence</th><td class="small">BlockRand derives the final seed as SHA256(player_secret:server_secret:drand_signature) this is bare SHA-256 over a concatenated input, not HMAC-SHA256. In principle, length-extension attacks are applicable. In practice the risk is low because none of the three inputs are attacker-controlled during the bet, but the construction is not formally secure against this class of attack.</td></tr>
+                  <tr><th>Evidence</th><td class="small">BlockRand derives the final seed as SHA256(player_secret:server_secret:drand_signature). This is bare SHA-256 over a concatenated input, not HMAC-SHA256. Length-extension attacks are theoretically applicable. The risk is low because none of the three inputs are attacker-controlled during the bet, but the construction is not formally secure against this class of attack.</td></tr>
                 </tbody>
               </table>
             </div>
@@ -790,7 +794,7 @@
     <span class="badge bg-success">Yes</span>
   
 </td></tr>
-                  <tr><th>Evidence</th><td class="small">drand produces randomness via a threshold BLS12-381 signature over the round number. This is a well-studied, bias-resistant construction. The League of Entropy nodes are operated by independent institutions, making the output cryptographically unpredictable unless a threshold of nodes collude.</td></tr>
+                  <tr><th>Evidence</th><td class="small">drand produces randomness via a threshold BLS12-381 signature over the round number. This is a well-studied, bias-resistant construction. The League of Entropy nodes are operated by independent institutions. The output is cryptographically unpredictable unless a threshold of nodes collude.</td></tr>
                 </tbody>
               </table>
             </div>
@@ -822,7 +826,7 @@
     <span class="badge bg-success">Yes</span>
   
 </td></tr>
-                  <tr><th>Evidence</th><td class="small">BlockRand&#39;s protocol requires the player to supply their own player_secret before the game begins. The server does not generate or suggest this value — it is entirely the player&#39;s responsibility.</td></tr>
+                  <tr><th>Evidence</th><td class="small">BlockRand&#39;s protocol requires the player to supply their own player_secret before the game begins. The server does not generate or suggest this value. Providing a secure player_secret is entirely the player&#39;s responsibility.</td></tr>
                 </tbody>
               </table>
             </div>
@@ -849,7 +853,7 @@
               <table class="table table-sm">
                 <tbody>
                   <tr><th>Evidence category</th><td><span class="enum-tag">0.5</span></td></tr>
-                  <tr><th>Description</th><td class="small">The server commits SHA256(server_secret) before the player places a bet, and the agreed future drand round acts as an independent temporal anchor (the round number is publicly known and its signature hasn&#39;t been published yet). However, the server commitment itself is not on-chain or timestamped by a third party — you are trusting BlockRand&#39;s server logs that the commitment was made before the client seed was received.</td></tr>
+                  <tr><th>Description</th><td class="small">The server commits SHA256(server_secret) before the player places a bet, and the agreed future drand round acts as an independent temporal anchor (the round number is publicly known and its signature has not been published yet). The server commitment is not on-chain or timestamped by a third party. You are trusting BlockRand&#39;s server logs as proof the commitment was made before the client seed was received.</td></tr>
                 </tbody>
               </table>
             </div>
@@ -885,7 +889,7 @@
     PASS
   </span>
 </td>
-                    <td class="small text-muted">Assuming the protocol is followed correctly: the operator commits SHA256(server_secret) before receiving the player_secret, and the drand round is agreed in advance. The operator cannot pick a favourable server_secret after seeing the player&#39;s input because they have already published its hash. The drand output is outside the operator&#39;s control.</td>
+                    <td class="small text-muted">Assuming the protocol is followed correctly, the operator commits SHA256(server_secret) before receiving the player_secret, and the drand round is agreed in advance. The operator is unable to pick a favourable server_secret after seeing the player&#39;s input, as they have already published its hash. The drand output is outside the operator&#39;s control.</td>
                   </tr>
                   
                   
@@ -897,7 +901,7 @@
     PASS
   </span>
 </td>
-                    <td class="small text-muted">The player does not know server_secret at bet time — only its SHA-256 hash is disclosed. Without knowing both server_secret and the future drand signature, the player cannot predict or reverse-engineer the outcome, even if they choose their player_secret strategically.</td>
+                    <td class="small text-muted">The player does not know server_secret at bet time. Only its SHA-256 hash is disclosed. Without knowing both server_secret and the future drand signature, the player is unable to predict or reverse-engineer the outcome, even if they choose their player_secret strategically.</td>
                   </tr>
                   
                   
@@ -921,7 +925,7 @@
     PASS
   </span>
 </td>
-                    <td class="small text-muted">drand uses a t-of-n threshold BLS signature across the League of Entropy. A single compromised node cannot bias or predict the output — collusion of t nodes is required. The threshold is documented in the chain&#39;s group configuration.</td>
+                    <td class="small text-muted">drand uses a t-of-n threshold BLS signature across the League of Entropy. A single compromised node is unable to bias or predict the output. Collusion of t nodes is required. The threshold is documented in the chain&#39;s group configuration.</td>
                   </tr>
                   
                   
@@ -990,7 +994,7 @@
                     <th>Failed rounds</th>
                     <td class="">0</td>
                   </tr>
-                  <tr><th>Evidence</th><td class="small">BlockRand&#39;s protocol mandates that the agreed drand round (current_round + k, k &gt;= 1) is locked before the bet is accepted. Settlement is refused until the target beacon is published. Reviewing 100 rounds of protocol documentation shows consistent enforcement of this ordering. Note: our simulation implementation uses historical rounds for practical bulk generation, which would violate this constraint in a live deployment.</td></tr>
+                  <tr><th>Evidence</th><td class="small">BlockRand&#39;s protocol requires the agreed drand round (current_round + k, k &gt;= 1) to be locked before the bet is accepted. Settlement is refused until the target beacon is published. Reviewing 100 rounds of protocol documentation shows consistent enforcement of this ordering. The simulation implementation uses historical rounds for practical bulk generation, which would violate this constraint in a live deployment.</td></tr>
                 </tbody>
               </table>
               
@@ -1024,7 +1028,7 @@
   
 </td></tr>
                     <tr><th>Nodes checked</th><td>2</td></tr>
-                    <tr><th>Evidence</th><td class="small">The quicknet chain public key was verified to be consistent across the Cloudflare (drand.cloudflare.com) and drand.sh endpoints via the /info endpoint. Both return the same group public key, confirming no DKG equivocation has occurred.</td></tr>
+                    <tr><th>Evidence</th><td class="small">The quicknet chain public key was verified as consistent across the Cloudflare (drand.cloudflare.com) and drand.sh endpoints via the /info endpoint. Both return the same group public key, confirming no DKG equivocation has occurred.</td></tr>
                   </tbody>
                 </table>
                 
@@ -1112,7 +1116,7 @@
     <span class="badge bg-secondary">—</span>
   
 </td></tr>
-                  <tr><th>Evidence</th><td class="small">server_secret is shared across all rolls in a session. SHA-256 is one-way, but the multi-round session construction (SHA256(player:server:sig_r) for each round r) has not been formally documented as a provably-one-way DRBG. Once the server discloses server_secret post-session, any third party can recompute every roll&#39;s outcome — this is by design for verification, but means all session outcomes become computable simultaneously.</td></tr>
+                  <tr><th>Evidence</th><td class="small">server_secret is shared across all rolls in a session. SHA-256 is one-way, but the multi-round session construction (SHA256(player:server:sig_r) for each round r) has not been formally documented as a provably-one-way DRBG. Once the server discloses server_secret post-session, any third party is able to recompute every roll&#39;s outcome. This is by design for verification, but means all session outcomes become reproducible at the same time.</td></tr>
                 </tbody>
               </table>
             </div>
@@ -1161,7 +1165,7 @@
  Overflow documented</div>
               </div>
               
-              <p class="small text-muted mb-0">Evidence: The nonce is the drand round number, which starts at whatever the current round is (a large integer, not 0). It increments by 1 per roll. A new session generates a fresh server_secret, which constitutes a seed rotation. No overflow policy is documented, though drand rounds will not overflow a 64-bit integer for centuries at the current 3-second period.</p>
+              <p class="small text-muted mb-0">Evidence: The nonce is the drand round number, starting at whatever the current round is (a large integer, not 0). The nonce increments by 1 per roll. A new session generates a fresh server_secret, which constitutes a seed rotation. No overflow policy is documented, though drand rounds will not overflow a 64-bit integer for centuries at the current 3-second period.</p>
             </div>
           </div>
         </div>
@@ -1184,7 +1188,7 @@
                   <tr><th>Default seed source</th><td><span class="enum-tag">client_side</span></td></tr>
                   <tr><th>Rotation guidance availability</th><td><span class="enum-tag">present</span></td></tr>
                   <tr><th>Rotation recommendation</th><td><span class="enum-tag">per_session</span></td></tr>
-                  <tr><th>Evidence</th><td class="small">BlockRand requires the player to provide a new player_secret for each game session. The documentation makes clear this should be a fresh value each time to maintain the security of the commit-reveal protocol.</td></tr>
+                  <tr><th>Evidence</th><td class="small">BlockRand requires the player to provide a new player_secret for each game session. The documentation states this should be a fresh value each time to maintain the security of the commit-reveal protocol.</td></tr>
                 </tbody>
               </table>
             </div>
@@ -1233,13 +1237,13 @@
                   
                   <tr><th class="small">algorithmDisclosure</th><td class="small text-muted">BlockRand fully documents the seed derivation formula SHA256(player_secret:server_secret:drand_signature) and the rejection sampling step. The drand protocol is also fully specified at docs.drand.love.</td></tr>
                   
-                  <tr><th class="small">entropySourceDisclosure</th><td class="small text-muted">drand quicknet is explicitly named, with the chain hash, beacon period, and cryptographic construction (BLS12-381 G1 threshold signature) all publicly documented and verifiable.</td></tr>
+                  <tr><th class="small">entropySourceDisclosure</th><td class="small text-muted">drand quicknet is explicitly named as the entropy source. The chain hash, beacon period, and cryptographic construction (BLS12-381 G1 threshold signature) are all publicly documented and verifiable.</td></tr>
                   
-                  <tr><th class="small">historicalAuditabilityWindow</th><td class="small text-muted">drand beacons are permanently stored and retrievable by round number via multiple public endpoints. Any past round&#39;s signature can be fetched at any time, making every historical outcome independently reproducible.</td></tr>
+                  <tr><th class="small">historicalAuditabilityWindow</th><td class="small text-muted">drand beacons are permanently stored and retrievable by round number via multiple public endpoints. You fetch any past round&#39;s signature at any time. This makes every historical outcome independently reproducible.</td></tr>
                   
-                  <tr><th class="small">verificationToolAvailability</th><td class="small text-muted">BlockRand provides verification instructions but no one-click tool. Independent verification is fully possible: fetch the drand beacon for the stored round, recompute SHA256, apply rejection sampling. Any developer can do this with standard libraries.</td></tr>
+                  <tr><th class="small">verificationToolAvailability</th><td class="small text-muted">BlockRand provides verification instructions but no one-click tool. Independent verification is fully possible: fetch the drand beacon for the stored round, recompute SHA256, and apply rejection sampling. Any developer with standard libraries is able to do this.</td></tr>
                   
-                  <tr><th class="small">verificationFriction</th><td class="small text-muted">Experts can verify by fetching the drand API, computing SHA256, and running rejection sampling — straightforward with any programming language. Non-experts have no accessible path: there is no guided UI, and the steps require understanding of hash functions and modular arithmetic.</td></tr>
+                  <tr><th class="small">verificationFriction</th><td class="small text-muted">Experts verify by fetching the drand API, computing SHA256, and running rejection sampling. This is straightforward with any programming language. Non-experts have no accessible path. There is no guided UI, and the steps require understanding of hash functions and modular arithmetic.</td></tr>
                   
                 </tbody>
               </table>
@@ -1351,7 +1355,7 @@ function passColours(values, sig) {
 
 
 (function() {
-  const td = {"justifications": {"algorithmDisclosure": "BlockRand fully documents the seed derivation formula SHA256(player_secret:server_secret:drand_signature) and the rejection sampling step. The drand protocol is also fully specified at docs.drand.love.", "entropySourceDisclosure": "drand quicknet is explicitly named, with the chain hash, beacon period, and cryptographic construction (BLS12-381 G1 threshold signature) all publicly documented and verifiable.", "historicalAuditabilityWindow": "drand beacons are permanently stored and retrievable by round number via multiple public endpoints. Any past round\u0027s signature can be fetched at any time, making every historical outcome independently reproducible.", "verificationFriction": "Experts can verify by fetching the drand API, computing SHA256, and running rejection sampling \u2014 straightforward with any programming language. Non-experts have no accessible path: there is no guided UI, and the steps require understanding of hash functions and modular arithmetic.", "verificationToolAvailability": "BlockRand provides verification instructions but no one-click tool. Independent verification is fully possible: fetch the drand beacon for the stored round, recompute SHA256, apply rejection sampling. Any developer can do this with standard libraries."}, "labels": ["Algorithm Disclosure", "Entropy Source Disclosure", "Historical Auditability", "Verification Tool (In-Platform)", "Verification Tool (Third-Party)", "Verification Friction (Expert)", "Verification Friction (Non-Expert)"], "scores": [1.0, 1.0, 1.0, 0.5, 1.0, 1.0, 0.0]};
+  const td = {"justifications": {"algorithmDisclosure": "BlockRand fully documents the seed derivation formula SHA256(player_secret:server_secret:drand_signature) and the rejection sampling step. The drand protocol is also fully specified at docs.drand.love.", "entropySourceDisclosure": "drand quicknet is explicitly named as the entropy source. The chain hash, beacon period, and cryptographic construction (BLS12-381 G1 threshold signature) are all publicly documented and verifiable.", "historicalAuditabilityWindow": "drand beacons are permanently stored and retrievable by round number via multiple public endpoints. You fetch any past round\u0027s signature at any time. This makes every historical outcome independently reproducible.", "verificationFriction": "Experts verify by fetching the drand API, computing SHA256, and running rejection sampling. This is straightforward with any programming language. Non-experts have no accessible path. There is no guided UI, and the steps require understanding of hash functions and modular arithmetic.", "verificationToolAvailability": "BlockRand provides verification instructions but no one-click tool. Independent verification is fully possible: fetch the drand beacon for the stored round, recompute SHA256, and apply rejection sampling. Any developer with standard libraries is able to do this."}, "labels": ["Algorithm Disclosure", "Entropy Source Disclosure", "Historical Auditability", "Verification Tool (In-Platform)", "Verification Tool (Third-Party)", "Verification Friction (Expert)", "Verification Friction (Non-Expert)"], "scores": [1.0, 1.0, 1.0, 0.5, 1.0, 1.0, 0.0]};
   new Chart(document.getElementById("transparencyScoresChart"), {
     type: "bar",
     data: {
