@@ -3,3 +3,6 @@ numpy
 pandas
 pytest
 jinja2>=3.0
+requests
+web3
+python-dotenv
