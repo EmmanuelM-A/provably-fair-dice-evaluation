@@ -32,16 +32,21 @@ def check_nonce_unpredictability(records: List[RollRecord]) -> float:
 
 
 def check_nonce_uniqueness(records: List[RollRecord]) -> BinaryResult:
-    """Check that all nonce values are unique across rolls."""
-    nonces = [r.nonce for r in records]
-    counts = Counter(nonces)
-    duplicates = {n: c for n, c in counts.items() if c > 1}
+    """Check that (server_seed, nonce) pairs are unique across rolls.
+
+    Bare nonce integers are legitimately reused when a server seed rotates —
+    the HMAC key changes, so the outputs remain distinct. What must be unique
+    is the (key, nonce) pair, not the nonce alone.
+    """
+    pairs = [(r.server_seed, r.nonce) for r in records]
+    counts = Counter(pairs)
+    duplicates = {p: c for p, c in counts.items() if c > 1}
     n_duplicate_rolls = sum(c - 1 for c in duplicates.values())
     passed = len(duplicates) == 0
     message = (
-        f"All {len(records)} nonce values are unique."
+        f"All {len(records)} (server_seed, nonce) pairs are unique."
         if passed
-        else f"{len(duplicates)} nonce value(s) reused ({n_duplicate_rolls} duplicate roll(s))."
+        else f"{len(duplicates)} (server_seed, nonce) pair(s) reused ({n_duplicate_rolls} duplicate roll(s))."
     )
     return BinaryResult(
         test_name="nonce_uniqueness",
@@ -49,7 +54,7 @@ def check_nonce_uniqueness(records: List[RollRecord]) -> BinaryResult:
         message=message,
         details={
             "n_records": len(records),
-            "n_duplicate_nonces": len(duplicates),
+            "n_duplicate_pairs": len(duplicates),
             "n_duplicate_rolls": n_duplicate_rolls,
         },
     )

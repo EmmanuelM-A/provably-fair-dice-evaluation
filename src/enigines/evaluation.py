@@ -102,6 +102,7 @@ class EvaluationEngine:
             mechanism=str(self._mechanism),
             tier=tier,
             saved_at=datetime.now(timezone.utc).strftime(DATE_FORMAT),
+            performance=PerformanceEvaluationResult(),
         )
 
         # Phase 1: always run LIGHT for all domains
